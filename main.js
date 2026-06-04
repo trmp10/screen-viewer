@@ -1,4 +1,4 @@
-const { app, BrowserWindow, session, ipcMain, globalShortcut } = require('electron')
+const { app, BrowserWindow, session, ipcMain } = require('electron')
 const path = require('path')
 
 function stripFrameHeaders(details, callback) {
@@ -28,16 +28,17 @@ function createWindow() {
 
   ipcMain.on('set-fullscreen', (_, val) => win.setFullScreen(val))
 
-  win.loadFile('index.html')
-  win.setMenuBarVisibility(false)
-
-  win.on('focus', () => {
-    globalShortcut.register('Escape', () => win.webContents.send('key', 'Escape'))
-    globalShortcut.register('Left', () => win.webContents.send('key', 'ArrowLeft'))
-    globalShortcut.register('Right', () => win.webContents.send('key', 'ArrowRight'))
+  win.webContents.on('did-attach-webview', (_, webviewContents) => {
+    webviewContents.on('before-input-event', (event, input) => {
+      if (input.type !== 'keyDown') return
+      if (['Escape', 'ArrowLeft', 'ArrowRight'].includes(input.key)) {
+        win.webContents.send('key', input.key)
+      }
+    })
   })
 
-  win.on('blur', () => globalShortcut.unregisterAll())
+  win.loadFile('index.html')
+  win.setMenuBarVisibility(false)
 }
 
 app.whenReady().then(createWindow)
