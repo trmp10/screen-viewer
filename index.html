@@ -597,7 +597,7 @@
         </svg>
       </button>
       <div class="title-dropdown">
-        <div class="title-menu-item" id="releaseBtn">Release</div>
+        <div class="title-menu-item" id="releaseBtn">Update</div>
       </div>
     </div>
     <div class="url-input-wrap">
@@ -1292,24 +1292,24 @@
     releaseBtn.onclick = () => {
       if (!window.electronAPI) return;
       titleWrap.classList.remove('open');
-      releaseBtn.textContent = 'Releasing…';
+      releaseBtn.textContent = 'Updating…';
       window.electronAPI.release();
     };
     if (window.electronAPI) {
-      window.electronAPI.onReleaseDone((version) => {
+      window.electronAPI.onUpdateDone((version) => {
         releaseBtn.textContent = `v${version} shipped ✓`;
         releaseBtn.style.color = '#4caf50';
         setTimeout(() => {
-          releaseBtn.textContent = 'Release';
+          releaseBtn.textContent = 'Update';
           releaseBtn.style.color = '';
         }, 3000);
       });
-      window.electronAPI.onReleaseError((msg) => {
+      window.electronAPI.onUpdateError((msg) => {
         releaseBtn.textContent = 'Failed';
         releaseBtn.style.color = '#f44336';
         releaseBtn.title = msg;
         setTimeout(() => {
-          releaseBtn.textContent = 'Release';
+          releaseBtn.textContent = 'Update';
           releaseBtn.style.color = '';
           releaseBtn.title = '';
         }, 4000);
