@@ -101,6 +101,61 @@
 
     .header-icon-btn:hover { background: #2a2a2a; color: #ccc; border-color: #444; }
 
+    /* Title dropdown */
+    .title-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .title-caret {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: #555;
+      cursor: pointer;
+      transition: color 0.1s, background 0.1s;
+      padding: 0;
+    }
+
+    .title-caret:hover { color: #aaa; background: #1e1e1e; }
+
+    .title-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      background: #161616;
+      border: 1px solid #2e2e2e;
+      border-radius: 8px;
+      padding: 6px;
+      min-width: 160px;
+      z-index: 300;
+    }
+
+    .title-wrap.open .title-dropdown { display: block; }
+
+    .title-menu-item {
+      display: flex;
+      align-items: center;
+      padding: 7px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      color: #aaa;
+      font-size: 13px;
+      white-space: nowrap;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .title-menu-item:hover { background: #222; color: #fff; }
+
     /* Bookmarks */
     .bookmark-wrap {
       position: relative;
@@ -527,16 +582,23 @@
 <body>
 
   <div class="header">
-    <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
-    <span class="header-title">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="3" width="20" height="13" rx="2"/>
-        <path d="M1 21h22"/>
-        <path d="M8 21l1-5h6l1 5"/>
-      </svg>
-      Screen Viewer
-    </span>
-    <button class="header-btn" id="releaseBtn" title="Release new version">Release</button>
+    <div class="title-wrap" id="titleWrap">
+      <span class="header-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="13" rx="2"/>
+          <path d="M1 21h22"/>
+          <path d="M8 21l1-5h6l1 5"/>
+        </svg>
+        Screen Viewer
+      </span>
+      <button class="title-caret" id="titleCaretBtn">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="title-dropdown">
+        <div class="title-menu-item" id="releaseBtn">Release</div>
+      </div>
     </div>
     <div class="url-input-wrap">
       <div class="bookmark-wrap" id="bookmarkWrap">
@@ -1222,21 +1284,24 @@
       if (window.electronAPI) window.electronAPI.takeScreenshot();
     };
 
+    const titleWrap = $('titleWrap');
+    $('titleCaretBtn').onclick = e => { e.stopPropagation(); titleWrap.classList.toggle('open'); };
+    document.addEventListener('click', e => { if (!titleWrap.contains(e.target)) titleWrap.classList.remove('open'); });
+
     const releaseBtn = $('releaseBtn');
     releaseBtn.onclick = () => {
       if (!window.electronAPI) return;
+      titleWrap.classList.remove('open');
       releaseBtn.textContent = 'Releasing…';
-      releaseBtn.disabled = true;
       window.electronAPI.release();
     };
     if (window.electronAPI) {
       window.electronAPI.onReleaseDone((version) => {
-        releaseBtn.textContent = `v${version} shipped`;
+        releaseBtn.textContent = `v${version} shipped ✓`;
         releaseBtn.style.color = '#4caf50';
         setTimeout(() => {
           releaseBtn.textContent = 'Release';
           releaseBtn.style.color = '';
-          releaseBtn.disabled = false;
         }, 3000);
       });
       window.electronAPI.onReleaseError((msg) => {
@@ -1246,8 +1311,7 @@
         setTimeout(() => {
           releaseBtn.textContent = 'Release';
           releaseBtn.style.color = '';
-          releaseBtn.title = 'Release new version';
-          releaseBtn.disabled = false;
+          releaseBtn.title = '';
         }, 4000);
       });
     }
