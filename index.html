@@ -628,6 +628,35 @@
       gap: 0 8px;
     }
 
+    .inspect-toggle {
+      width: 32px;
+      height: 18px;
+      border-radius: 9px;
+      border: none;
+      background: #333;
+      cursor: pointer;
+      position: relative;
+      padding: 0;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    .inspect-toggle.on { background: #4a9eff; }
+
+    .inspect-toggle-knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.2s;
+      display: block;
+    }
+
+    .inspect-toggle.on .inspect-toggle-knob { transform: translateX(14px); }
+
     .inspect-hint {
       color: #444;
       font-size: 11px;
@@ -716,8 +745,11 @@
       </svg>
     </button>
     <div class="inspect-content">
-    <div class="inspect-tag" id="inspectTag">
+    <div class="inspect-tag" id="inspectTag" style="display:flex;align-items:center;justify-content:space-between;">
       <span id="inspectTagLabel">Click an element</span>
+      <button class="inspect-toggle" id="inspectToggle" title="Toggle inspect mode">
+        <span class="inspect-toggle-knob"></span>
+      </button>
     </div>
     <div id="inspectFields">
       <div class="inspect-field" style="margin-bottom:18px;">
@@ -730,7 +762,7 @@
       <div class="inspect-pad-grid" style="margin-bottom:6px;">
         <div class="inspect-field">
           <label>Size</label>
-          <input id="iFieldFontSize" type="text" placeholder="16px" />
+          <input id="iFieldFontSize" type="text" placeholder="16" />
         </div>
         <div class="inspect-field">
           <label>Weight</label>
@@ -745,7 +777,7 @@
           <input id="iFieldLineHeight" type="text" placeholder="normal" />
         </div>
       </div>
-      <div class="inspect-field" style="margin-bottom:6px;">
+      <div id="iSectionLetterSpacing" class="inspect-field" style="margin-bottom:6px;">
         <label>Letter spacing</label>
         <input id="iFieldLetterSpacing" type="text" placeholder="normal" />
       </div>
@@ -753,7 +785,7 @@
         <label>Family</label>
         <input id="iFieldFontFamily" type="text" placeholder="Inter" />
       </div>
-      <div class="inspect-field">
+      <div id="iSectionBg" class="inspect-field">
         <label>Background</label>
         <input id="iFieldBg" type="text" placeholder="#ffffff" />
       </div>
@@ -774,9 +806,9 @@
           <input id="iFieldHeight" type="text" placeholder="auto" />
         </div>
       </div>
-      <div class="inspect-field">
+      <div id="iSectionBorderRadius" class="inspect-field">
         <label>Border radius</label>
-        <input id="iFieldBorderRadius" type="text" placeholder="0px" />
+        <input id="iFieldBorderRadius" type="text" placeholder="0" />
       </div>
       <div class="inspect-field" style="display:none;">
         <label>Display</label>
@@ -786,46 +818,50 @@
         <label>Box shadow</label>
         <input id="iFieldBoxShadow" type="text" placeholder="none" />
       </div>
-      <div class="inspect-field" style="margin-bottom:6px;margin-top:18px;">
-        <label>Padding</label>
+      <div id="iSectionPad">
+        <div class="inspect-field" style="margin-bottom:6px;margin-top:18px;">
+          <label>Padding</label>
+        </div>
+        <div class="inspect-pad-grid">
+          <div class="inspect-field">
+            <label>Left</label>
+            <input id="iFieldPadLeft" type="text" placeholder="0" />
+          </div>
+          <div class="inspect-field">
+            <label>Right</label>
+            <input id="iFieldPadRight" type="text" placeholder="0" />
+          </div>
+          <div class="inspect-field">
+            <label>Top</label>
+            <input id="iFieldPadTop" type="text" placeholder="0" />
+          </div>
+          <div class="inspect-field">
+            <label>Bottom</label>
+            <input id="iFieldPadBottom" type="text" placeholder="0" />
+          </div>
+        </div>
       </div>
-      <div class="inspect-pad-grid">
-        <div class="inspect-field">
-          <label>Left</label>
-          <input id="iFieldPadLeft" type="text" placeholder="0px" />
+      <div id="iSectionMar">
+        <div class="inspect-field" style="margin-bottom:6px;margin-top:18px;">
+          <label>Margin</label>
         </div>
-        <div class="inspect-field">
-          <label>Right</label>
-          <input id="iFieldPadRight" type="text" placeholder="0px" />
-        </div>
-        <div class="inspect-field">
-          <label>Top</label>
-          <input id="iFieldPadTop" type="text" placeholder="0px" />
-        </div>
-        <div class="inspect-field">
-          <label>Bottom</label>
-          <input id="iFieldPadBottom" type="text" placeholder="0px" />
-        </div>
-      </div>
-      <div class="inspect-field" style="margin-bottom:6px;margin-top:18px;">
-        <label>Margin</label>
-      </div>
-      <div class="inspect-pad-grid" style="padding-bottom:4px;">
-        <div class="inspect-field">
-          <label>Left</label>
-          <input id="iFieldMarLeft" type="text" placeholder="0px" />
-        </div>
-        <div class="inspect-field">
-          <label>Right</label>
-          <input id="iFieldMarRight" type="text" placeholder="0px" />
-        </div>
-        <div class="inspect-field">
-          <label>Top</label>
-          <input id="iFieldMarTop" type="text" placeholder="0px" />
-        </div>
-        <div class="inspect-field">
-          <label>Bottom</label>
-          <input id="iFieldMarBottom" type="text" placeholder="0px" />
+        <div class="inspect-pad-grid" style="padding-bottom:4px;">
+          <div class="inspect-field">
+            <label>Left</label>
+            <input id="iFieldMarLeft" type="text" placeholder="0" />
+          </div>
+          <div class="inspect-field">
+            <label>Right</label>
+            <input id="iFieldMarRight" type="text" placeholder="0" />
+          </div>
+          <div class="inspect-field">
+            <label>Top</label>
+            <input id="iFieldMarTop" type="text" placeholder="0" />
+          </div>
+          <div class="inspect-field">
+            <label>Bottom</label>
+            <input id="iFieldMarBottom" type="text" placeholder="0" />
+          </div>
         </div>
       </div>
     </div>
@@ -1258,8 +1294,18 @@
       if (!e.message.startsWith('__sv__')) return;
       const data = JSON.parse(e.message.slice(6));
       if (data.type !== 'inspect') return;
+      const CONTAINER_TAGS = new Set(['div','section','article','main','nav','header','footer','aside','ul','ol','li','form','table','tbody','tr','td','th']);
+      const isContainer = CONTAINER_TAGS.has(data.tag) || data.text.length > 50;
+      iFieldText.closest('.inspect-field').style.display = isContainer ? 'none' : '';
       inspectTagLabel.textContent = '<' + data.tag + '>';
-      iFieldText.value = data.text;
+      iFieldText.value = isContainer ? '' : data.text;
+
+      const isZero = v => !v || v === '0' || v === 'normal' || v === '0px';
+      $('iSectionLetterSpacing').style.display = isZero(data.letterSpacing) ? 'none' : '';
+      $('iSectionBg').style.display = !rgbToHex(data.backgroundColor) ? 'none' : '';
+      $('iSectionBorderRadius').style.display = isZero(data.borderRadius) ? 'none' : '';
+      $('iSectionPad').style.display = [data.paddingTop, data.paddingRight, data.paddingBottom, data.paddingLeft].every(isZero) ? 'none' : '';
+      $('iSectionMar').style.display = [data.marginTop, data.marginRight, data.marginBottom, data.marginLeft].every(isZero) ? 'none' : '';
       iFieldFontSize.value = stripPx(data.fontSize);
       iFieldFontWeight.value = data.fontWeight;
       iFieldLineHeight.value = stripPx(data.lineHeight);
@@ -1286,6 +1332,7 @@
       $('inspectBtn').classList.toggle('active', inspecting);
       if (inspecting) {
         inspectPanel.classList.add('visible');
+        inspectToggle.classList.add('on');
         if (refs.webview) {
           refs.webview.executeJavaScript(INJECT_INSPECTOR);
           refs.webview.addEventListener('console-message', onConsoleMessage);
@@ -1296,6 +1343,7 @@
         panelCollapsed = false;
         inspectCollapseIcon.style.transform = '';
         inspectTagLabel.textContent = 'Click an element';
+        inspectToggle.classList.remove('on');
         if (refs.webview) {
           refs.webview.executeJavaScript(CLEANUP_INSPECTOR);
           refs.webview.removeEventListener('console-message', onConsoleMessage);
@@ -1344,6 +1392,16 @@
     iFieldMarLeft.addEventListener('input', () => applyProp('margin-left', normDim(iFieldMarLeft.value.trim())));
 
     $('inspectBtn').onclick = toggleInspect;
+
+    const inspectToggle = $('inspectToggle');
+    inspectToggle.onclick = () => {
+      const active = inspectToggle.classList.toggle('on');
+      if (active) {
+        if (refs.webview) refs.webview.executeJavaScript(INJECT_INSPECTOR);
+      } else {
+        if (refs.webview) refs.webview.executeJavaScript(CLEANUP_INSPECTOR);
+      }
+    };
 
     $('screenshotBtn').onclick = () => {
       if (!refs.webview || !state.url) return;
