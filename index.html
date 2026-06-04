@@ -1130,25 +1130,25 @@
       if (data.type !== 'inspect') return;
       inspectTagLabel.textContent = '<' + data.tag + '>';
       iFieldText.value = data.text;
-      iFieldFontSize.value = data.fontSize;
+      iFieldFontSize.value = stripPx(data.fontSize);
       iFieldFontWeight.value = data.fontWeight;
-      iFieldLineHeight.value = data.lineHeight;
-      iFieldLetterSpacing.value = data.letterSpacing;
+      iFieldLineHeight.value = stripPx(data.lineHeight);
+      iFieldLetterSpacing.value = stripPx(data.letterSpacing);
       iFieldFontFamily.value = data.fontFamily;
       iFieldColor.value = rgbToHex(data.color);
       iFieldBg.value = rgbToHex(data.backgroundColor);
       iFieldOpacity.value = data.opacity;
-      iFieldBorderRadius.value = data.borderRadius;
-      iFieldWidth.value = data.width;
-      iFieldHeight.value = data.height;
-      iFieldPadTop.value = data.paddingTop;
-      iFieldPadRight.value = data.paddingRight;
-      iFieldPadBottom.value = data.paddingBottom;
-      iFieldPadLeft.value = data.paddingLeft;
-      iFieldMarTop.value = data.marginTop;
-      iFieldMarRight.value = data.marginRight;
-      iFieldMarBottom.value = data.marginBottom;
-      iFieldMarLeft.value = data.marginLeft;
+      iFieldBorderRadius.value = stripPx(data.borderRadius);
+      iFieldWidth.value = stripPx(data.width);
+      iFieldHeight.value = stripPx(data.height);
+      iFieldPadTop.value = stripPx(data.paddingTop);
+      iFieldPadRight.value = stripPx(data.paddingRight);
+      iFieldPadBottom.value = stripPx(data.paddingBottom);
+      iFieldPadLeft.value = stripPx(data.paddingLeft);
+      iFieldMarTop.value = stripPx(data.marginTop);
+      iFieldMarRight.value = stripPx(data.marginRight);
+      iFieldMarBottom.value = stripPx(data.marginBottom);
+      iFieldMarLeft.value = stripPx(data.marginLeft);
     }
 
     function toggleInspect() {
