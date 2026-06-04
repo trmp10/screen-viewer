@@ -1174,67 +1174,44 @@
     }
 
     function normDim(v) { return /^\d+(\.\d+)?$/.test(v) ? v + 'px' : v; }
-    function normColor(v) { return /^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(v) ? '#' + v : v; }
+    function normColor(v) { return /^[0-9a-fA-F]{3,6}$/.test(v) ? '#' + v : v; }
+    function stripPx(v) { return v ? v.replace(/px$/, '') : v; }
 
-    function applyOverride() {
-      if (!refs.webview) return;
-      const fs = normDim(iFieldFontSize.value.trim());
-      const fw = iFieldFontWeight.value.trim();
-      const lh = normDim(iFieldLineHeight.value.trim());
-      const ls = normDim(iFieldLetterSpacing.value.trim());
-      const ff = iFieldFontFamily.value.trim();
-      const col = normColor(iFieldColor.value.trim());
-      const bg = normColor(iFieldBg.value.trim());
-      const op = iFieldOpacity.value.trim();
-      const br = normDim(iFieldBorderRadius.value.trim());
-      const w = normDim(iFieldWidth.value.trim());
-      const h = normDim(iFieldHeight.value.trim());
-      const pt = normDim(iFieldPadTop.value.trim());
-      const pr = normDim(iFieldPadRight.value.trim());
-      const pb = normDim(iFieldPadBottom.value.trim());
-      const pl = normDim(iFieldPadLeft.value.trim());
-      const mt = normDim(iFieldMarTop.value.trim());
-      const mr = normDim(iFieldMarRight.value.trim());
-      const mb = normDim(iFieldMarBottom.value.trim());
-      const ml = normDim(iFieldMarLeft.value.trim());
-      refs.webview.executeJavaScript(`
-        if (window.__svLastEl) {
-          const el = window.__svLastEl;
-          el.style.setProperty('font-size', '${fs}', 'important');
-          el.style.setProperty('font-weight', '${fw}', 'important');
-          el.style.setProperty('line-height', '${lh}', 'important');
-          el.style.setProperty('letter-spacing', '${ls}', 'important');
-          el.style.setProperty('font-family', '${ff}', 'important');
-          el.style.setProperty('color', '${col}', 'important');
-          el.style.setProperty('background-color', '${bg}', 'important');
-          el.style.setProperty('opacity', '${op}', 'important');
-          el.style.setProperty('border-radius', '${br}', 'important');
-          el.style.setProperty('width', '${w}', 'important');
-          el.style.setProperty('height', '${h}', 'important');
-          el.style.setProperty('padding-top', '${pt}', 'important');
-          el.style.setProperty('padding-right', '${pr}', 'important');
-          el.style.setProperty('padding-bottom', '${pb}', 'important');
-          el.style.setProperty('padding-left', '${pl}', 'important');
-          el.style.setProperty('margin-top', '${mt}', 'important');
-          el.style.setProperty('margin-right', '${mr}', 'important');
-          el.style.setProperty('margin-bottom', '${mb}', 'important');
-          el.style.setProperty('margin-left', '${ml}', 'important');
-        }
-      `);
+    function rgbToHex(rgb) {
+      const m = rgb.match(/[\d.]+/g);
+      if (!m || m.length < 3) return '';
+      if (m.length >= 4 && parseFloat(m[3]) === 0) return '';
+      return '#' + m.slice(0,3).map(n => parseInt(n).toString(16).padStart(2,'0')).join('');
     }
 
-    [iFieldFontSize, iFieldFontWeight, iFieldLineHeight, iFieldLetterSpacing, iFieldFontFamily, iFieldColor, iFieldBg, iFieldOpacity, iFieldBorderRadius, iFieldWidth, iFieldHeight, iFieldPadTop, iFieldPadRight, iFieldPadBottom, iFieldPadLeft, iFieldMarTop, iFieldMarRight, iFieldMarBottom, iFieldMarLeft].forEach(f => f.addEventListener('input', applyOverride));
+    function applyProp(prop, value) {
+      if (!refs.webview || !value) return;
+      refs.webview.executeJavaScript(`if (window.__svLastEl) window.__svLastEl.style.setProperty('${prop}', '${value}', 'important')`);
+    }
 
     iFieldText.addEventListener('input', () => {
       if (!refs.webview) return;
       refs.webview.executeJavaScript(`if (window.__svLastEl) window.__svLastEl.innerText = ${JSON.stringify(iFieldText.value)}`);
     });
-
-    function rgbToHex(rgb) {
-      const m = rgb.match(/\d+/g);
-      if (!m || m.length < 3) return rgb;
-      return '#' + m.slice(0,3).map(n => parseInt(n).toString(16).padStart(2,'0')).join('');
-    }
+    iFieldFontSize.addEventListener('input', () => applyProp('font-size', normDim(iFieldFontSize.value.trim())));
+    iFieldFontWeight.addEventListener('input', () => applyProp('font-weight', iFieldFontWeight.value.trim()));
+    iFieldLineHeight.addEventListener('input', () => applyProp('line-height', normDim(iFieldLineHeight.value.trim())));
+    iFieldLetterSpacing.addEventListener('input', () => applyProp('letter-spacing', normDim(iFieldLetterSpacing.value.trim())));
+    iFieldFontFamily.addEventListener('input', () => applyProp('font-family', iFieldFontFamily.value.trim()));
+    iFieldColor.addEventListener('input', () => applyProp('color', normColor(iFieldColor.value.trim())));
+    iFieldBg.addEventListener('input', () => applyProp('background-color', normColor(iFieldBg.value.trim())));
+    iFieldOpacity.addEventListener('input', () => applyProp('opacity', iFieldOpacity.value.trim()));
+    iFieldBorderRadius.addEventListener('input', () => applyProp('border-radius', normDim(iFieldBorderRadius.value.trim())));
+    iFieldWidth.addEventListener('input', () => applyProp('width', normDim(iFieldWidth.value.trim())));
+    iFieldHeight.addEventListener('input', () => applyProp('height', normDim(iFieldHeight.value.trim())));
+    iFieldPadTop.addEventListener('input', () => applyProp('padding-top', normDim(iFieldPadTop.value.trim())));
+    iFieldPadRight.addEventListener('input', () => applyProp('padding-right', normDim(iFieldPadRight.value.trim())));
+    iFieldPadBottom.addEventListener('input', () => applyProp('padding-bottom', normDim(iFieldPadBottom.value.trim())));
+    iFieldPadLeft.addEventListener('input', () => applyProp('padding-left', normDim(iFieldPadLeft.value.trim())));
+    iFieldMarTop.addEventListener('input', () => applyProp('margin-top', normDim(iFieldMarTop.value.trim())));
+    iFieldMarRight.addEventListener('input', () => applyProp('margin-right', normDim(iFieldMarRight.value.trim())));
+    iFieldMarBottom.addEventListener('input', () => applyProp('margin-bottom', normDim(iFieldMarBottom.value.trim())));
+    iFieldMarLeft.addEventListener('input', () => applyProp('margin-left', normDim(iFieldMarLeft.value.trim())));
 
     $('inspectBtn').onclick = toggleInspect;
 
