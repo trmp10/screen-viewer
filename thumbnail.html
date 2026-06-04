@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: transparent;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .thumb {
+      width: 200px;
+      height: 130px;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.4);
+      cursor: default;
+      animation: pop-in 0.22s cubic-bezier(0.2, 0, 0, 1);
+      will-change: transform, opacity;
+    }
+
+    @keyframes pop-in {
+      from { opacity: 0; transform: translateX(0) translateY(10px) scale(0.95); }
+      to   { opacity: 1; transform: translateX(0) translateY(0) scale(1); }
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+
+    .bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      width: 100%;
+      background: rgba(255,255,255,0.55);
+      transform-origin: left;
+      animation: shrink 5s linear forwards;
+    }
+
+    @keyframes shrink {
+      from { transform: scaleX(1); }
+      to   { transform: scaleX(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="thumb" id="thumb">
+    <img id="preview" alt="" />
+    <div class="bar" id="bar"></div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search)
+    const filepath = params.get('path')
+    const thumb = document.getElementById('thumb')
+
+    if (filepath) {
+      document.getElementById('preview').src = 'file://' + filepath
+    }
+
+    let handled = false
+
+    function finish(action) {
+      if (handled) return
+      handled = true
+      clearTimeout(autoSaveTimer)
+      action()
+    }
+
+    // Auto-save to Desktop after 5s
+    const autoSaveTimer = setTimeout(() => {
+      finish(() => {
+        if (window.thumbAPI && filepath) window.thumbAPI.saveToDesktop(filepath)
+        if (window.thumbAPI) window.thumbAPI.close()
+      })
+    }, 5000)
+
+    // Swipe detection
+    const SWIPE_THRESHOLD = 80
+    let dragStartX = null
+    let currentDeltaX = 0
+    let isSwiping = false
+
+    thumb.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return
+      dragStartX = e.clientX
+      currentDeltaX = 0
+      isSwiping = false
+    })
+
+    document.addEventListener('mousemove', (e) => {
+      if (dragStartX === null) return
+      const dx = Math.max(0, e.clientX - dragStartX)
+      currentDeltaX = dx
+      if (dx > 4) isSwiping = true
+      thumb.style.transform = `translateX(${dx}px)`
+      thumb.style.opacity = Math.max(0, 1 - dx / 160)
+    })
+
+    document.addEventListener('mouseup', () => {
+      if (dragStartX === null) return
+      dragStartX = null
+
+      if (!isSwiping) {
+        // Click — open preview
+        finish(() => {
+          if (window.thumbAPI && filepath) window.thumbAPI.openPreview(filepath)
+          if (window.thumbAPI) window.thumbAPI.close()
+        })
+        return
+      }
+
+      if (currentDeltaX >= SWIPE_THRESHOLD) {
+        // Swipe right — dismiss, no save
+        thumb.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out'
+        thumb.style.transform = 'translateX(240px)'
+        thumb.style.opacity = '0'
+        setTimeout(() => {
+          finish(() => {
+            if (window.thumbAPI && filepath) window.thumbAPI.deleteTemp(filepath)
+            if (window.thumbAPI) window.thumbAPI.close()
+          })
+        }, 200)
+      } else {
+        // Snap back
+        thumb.style.transition = 'transform 0.25s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s'
+        thumb.style.transform = 'translateX(0)'
+        thumb.style.opacity = '1'
+        setTimeout(() => { thumb.style.transition = '' }, 250)
+      }
+    })
+
+    // Cleanup if closed without action
+    window.addEventListener('beforeunload', () => {
+      if (!handled && window.thumbAPI && filepath) {
+        window.thumbAPI.deleteTemp(filepath)
+      }
+    })
+  </script>
+</body>
+</html>

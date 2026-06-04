@@ -48,7 +48,7 @@
       flex: 1;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       max-width: 580px;
       margin: 0 auto;
     }
@@ -233,8 +233,8 @@
     }
 
     .tab-name { font-weight: 500; }
-    .tab-dims { color: #444; font-size: 11px; }
-    .tab.active .tab-dims { color: #555; }
+    .tab-dims { color: #555; font-size: 11px; }
+    .tab.active .tab-dims { color: #777; }
 
     .tab-close {
       width: 14px;
@@ -419,6 +419,109 @@
     .btn:hover { opacity: 0.8; }
     .btn-primary { background: #fff; color: #000; }
     .btn-secondary { background: #222; color: #888; border: 1px solid #2e2e2e; }
+
+    /* Inspect */
+    .header-icon-btn.active {
+      background: #2a2a2a;
+      border-color: #4a9eff;
+      color: #4a9eff;
+    }
+
+    .inspect-panel {
+      display: none;
+      position: fixed;
+      top: 110px;
+      right: 16px;
+      width: 236px;
+      background: #161616;
+      border: 1px solid #2e2e2e;
+      border-radius: 10px;
+      overflow: hidden;
+      z-index: 500;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .inspect-panel.visible { display: flex; }
+
+    .inspect-panel.panel-collapsed {
+      transform: translateX(calc(100% - 32px));
+    }
+
+    .inspect-collapse-tab {
+      width: 32px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      border-right: 1px solid #2e2e2e;
+      color: #555;
+      cursor: pointer;
+      transition: color 0.1s, background 0.1s;
+      padding: 0;
+    }
+
+    .inspect-collapse-tab:hover { color: #ddd; background: rgba(255,255,255,0.04); }
+
+    .inspect-content {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+      min-width: 0;
+    }
+
+    .inspect-content::-webkit-scrollbar { width: 0; }
+
+    .inspect-tag {
+      color: #4a9eff;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .inspect-field {
+      margin-bottom: 10px;
+    }
+
+    .inspect-field label {
+      display: block;
+      color: #999;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 4px;
+    }
+
+    .inspect-field input {
+      width: 100%;
+      background: #0e0e0e;
+      border: 1px solid #2e2e2e;
+      border-radius: 5px;
+      color: #eee;
+      font-size: 13px;
+      padding: 6px 8px;
+      outline: none;
+      transition: border-color 0.1s;
+    }
+
+    .inspect-field input:focus { border-color: #484848; }
+
+    .inspect-pad-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 8px;
+    }
+
+    .inspect-hint {
+      color: #444;
+      font-size: 11px;
+      text-align: center;
+      padding: 8px 0;
+    }
   </style>
 </head>
 <body>
@@ -433,12 +536,6 @@
       Screen Viewer
     </span>
     <div class="url-input-wrap">
-      <button class="header-icon-btn" id="fullscreenBtn" title="Fullscreen">
-        <svg id="fsIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-          <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
-        </svg>
-      </button>
       <div class="bookmark-wrap" id="bookmarkWrap">
         <button class="header-icon-btn" id="bookmarkBtn" title="Bookmarks">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -460,6 +557,27 @@
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
         </svg>
       </button>
+      <button class="header-icon-btn" id="fullscreenBtn" title="Fullscreen">
+        <svg id="fsIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0;">
+    <button class="header-icon-btn" id="screenshotBtn" title="Screenshot">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </button>
+    <button class="header-icon-btn" id="inspectBtn" title="Inspect element">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="8 6 2 12 8 18"/>
+        <polyline points="16 6 22 12 16 18"/>
+        <line x1="15" y1="6" x2="9" y2="18"/>
+      </svg>
+    </button>
     </div>
   </div>
 
@@ -468,6 +586,129 @@
   </div>
 
   <div class="main" id="main"></div>
+
+  <div class="inspect-panel" id="inspectPanel">
+    <button class="inspect-collapse-tab" id="inspectCollapseBtn" title="Collapse">
+      <svg id="inspectCollapseIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </button>
+    <div class="inspect-content">
+    <div class="inspect-tag" id="inspectTag">
+      <span id="inspectTagLabel">Click an element</span>
+    </div>
+    <div id="inspectFields">
+      <div class="inspect-field" style="margin-bottom:18px;">
+        <label>Text</label>
+        <input id="iFieldText" type="text" placeholder="—" />
+      </div>
+      <div class="inspect-field" style="margin-bottom:6px;">
+        <label>Font</label>
+      </div>
+      <div class="inspect-pad-grid" style="margin-bottom:6px;">
+        <div class="inspect-field">
+          <label>Size</label>
+          <input id="iFieldFontSize" type="text" placeholder="16px" />
+        </div>
+        <div class="inspect-field">
+          <label>Weight</label>
+          <input id="iFieldFontWeight" type="text" placeholder="400" />
+        </div>
+        <div class="inspect-field">
+          <label>Color</label>
+          <input id="iFieldColor" type="text" placeholder="#000000" />
+        </div>
+        <div class="inspect-field">
+          <label>Line height</label>
+          <input id="iFieldLineHeight" type="text" placeholder="normal" />
+        </div>
+      </div>
+      <div class="inspect-field" style="margin-bottom:6px;">
+        <label>Letter spacing</label>
+        <input id="iFieldLetterSpacing" type="text" placeholder="normal" />
+      </div>
+      <div class="inspect-field" style="display:none;">
+        <label>Family</label>
+        <input id="iFieldFontFamily" type="text" placeholder="Inter" />
+      </div>
+      <div class="inspect-field">
+        <label>Background</label>
+        <input id="iFieldBg" type="text" placeholder="#ffffff" />
+      </div>
+      <div class="inspect-field" style="display:none;">
+        <label>Opacity</label>
+        <input id="iFieldOpacity" type="text" placeholder="1" />
+      </div>
+      <div class="inspect-field" style="margin-bottom:6px;margin-top:18px;">
+        <label>Size</label>
+      </div>
+      <div class="inspect-pad-grid" style="margin-bottom:10px;">
+        <div class="inspect-field">
+          <label>Width</label>
+          <input id="iFieldWidth" type="text" placeholder="auto" />
+        </div>
+        <div class="inspect-field">
+          <label>Height</label>
+          <input id="iFieldHeight" type="text" placeholder="auto" />
+        </div>
+      </div>
+      <div class="inspect-field">
+        <label>Border radius</label>
+        <input id="iFieldBorderRadius" type="text" placeholder="0px" />
+      </div>
+      <div class="inspect-field" style="display:none;">
+        <label>Display</label>
+        <input id="iFieldDisplay" type="text" placeholder="block" />
+      </div>
+      <div class="inspect-field" style="display:none;">
+        <label>Box shadow</label>
+        <input id="iFieldBoxShadow" type="text" placeholder="none" />
+      </div>
+      <div class="inspect-field" style="margin-bottom:6px;margin-top:18px;">
+        <label>Padding</label>
+      </div>
+      <div class="inspect-pad-grid">
+        <div class="inspect-field">
+          <label>Left</label>
+          <input id="iFieldPadLeft" type="text" placeholder="0px" />
+        </div>
+        <div class="inspect-field">
+          <label>Right</label>
+          <input id="iFieldPadRight" type="text" placeholder="0px" />
+        </div>
+        <div class="inspect-field">
+          <label>Top</label>
+          <input id="iFieldPadTop" type="text" placeholder="0px" />
+        </div>
+        <div class="inspect-field">
+          <label>Bottom</label>
+          <input id="iFieldPadBottom" type="text" placeholder="0px" />
+        </div>
+      </div>
+      <div class="inspect-field" style="margin-bottom:6px;margin-top:18px;">
+        <label>Margin</label>
+      </div>
+      <div class="inspect-pad-grid" style="padding-bottom:4px;">
+        <div class="inspect-field">
+          <label>Left</label>
+          <input id="iFieldMarLeft" type="text" placeholder="0px" />
+        </div>
+        <div class="inspect-field">
+          <label>Right</label>
+          <input id="iFieldMarRight" type="text" placeholder="0px" />
+        </div>
+        <div class="inspect-field">
+          <label>Top</label>
+          <input id="iFieldMarTop" type="text" placeholder="0px" />
+        </div>
+        <div class="inspect-field">
+          <label>Bottom</label>
+          <input id="iFieldMarBottom" type="text" placeholder="0px" />
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
 
 <div class="overlay hidden" id="overlay">
     <div class="modal">
@@ -547,7 +788,10 @@
         close.textContent = '×';
         close.onclick = e => { e.stopPropagation(); removeView(i); };
 
-        tab.append(name, dims, close);
+        const sep = document.createElement('span');
+        sep.textContent = '·';
+        sep.style.cssText = 'color:#333;font-size:10px;';
+        tab.append(name, sep, dims, close);
         tab.onclick = () => { state.active = i; save(); render(); };
         tabsBar.insertBefore(tab, addTabBtn);
       });
@@ -794,6 +1038,188 @@
     });
 
     if (window.electronAPI) window.electronAPI.onKey(handleKey);
+
+    // Inspect
+    let inspecting = false;
+    let panelCollapsed = false;
+    const inspectPanel = $('inspectPanel');
+    const inspectTagLabel = $('inspectTagLabel');
+    const inspectCollapseIcon = $('inspectCollapseIcon');
+    const inspectHint = $('inspectHint');
+    const inspectFields = $('inspectFields');
+
+    $('inspectCollapseBtn').onclick = () => {
+      panelCollapsed = !panelCollapsed;
+      inspectPanel.classList.toggle('panel-collapsed', panelCollapsed);
+      inspectCollapseIcon.style.transform = panelCollapsed ? 'rotate(180deg)' : '';
+    };
+    const iFieldText = $('iFieldText');
+    const iFieldFontSize = $('iFieldFontSize');
+    const iFieldFontWeight = $('iFieldFontWeight');
+    const iFieldLineHeight = $('iFieldLineHeight');
+    const iFieldLetterSpacing = $('iFieldLetterSpacing');
+    const iFieldFontFamily = $('iFieldFontFamily');
+    const iFieldColor = $('iFieldColor');
+    const iFieldBg = $('iFieldBg');
+    const iFieldOpacity = $('iFieldOpacity');
+    const iFieldBorderRadius = $('iFieldBorderRadius');
+    const iFieldDisplay = $('iFieldDisplay');
+    const iFieldBoxShadow = $('iFieldBoxShadow');
+    const iFieldMarTop = $('iFieldMarTop');
+    const iFieldMarRight = $('iFieldMarRight');
+    const iFieldMarBottom = $('iFieldMarBottom');
+    const iFieldMarLeft = $('iFieldMarLeft');
+    const iFieldWidth = $('iFieldWidth');
+    const iFieldHeight = $('iFieldHeight');
+    const iFieldPadTop = $('iFieldPadTop');
+    const iFieldPadRight = $('iFieldPadRight');
+    const iFieldPadBottom = $('iFieldPadBottom');
+    const iFieldPadLeft = $('iFieldPadLeft');
+
+    const INJECT_INSPECTOR = `(function() {
+      if (window.__svInspectCleanup) window.__svInspectCleanup();
+      const hl = document.createElement('div');
+      hl.style.cssText = 'position:fixed;pointer-events:none;border:2px solid #4a9eff;background:rgba(74,158,255,0.07);z-index:2147483647;box-sizing:border-box;';
+      document.body.appendChild(hl);
+      function onOver(e) {
+        const r = e.target.getBoundingClientRect();
+        hl.style.top = r.top+'px'; hl.style.left = r.left+'px';
+        hl.style.width = r.width+'px'; hl.style.height = r.height+'px';
+      }
+      function onClick(e) {
+        e.preventDefault(); e.stopPropagation();
+        const el = e.target;
+        window.__svLastEl = el;
+        const cs = window.getComputedStyle(el);
+        const r = el.getBoundingClientRect();
+        console.log('__sv__' + JSON.stringify({ type:'inspect', tag: el.tagName.toLowerCase(), text: el.innerText.slice(0,120), fontSize: cs.fontSize, fontWeight: cs.fontWeight, lineHeight: cs.lineHeight, letterSpacing: cs.letterSpacing, fontFamily: cs.fontFamily.split(',')[0].trim().replace(/['"]/g,''), color: cs.color, backgroundColor: cs.backgroundColor, opacity: cs.opacity, borderRadius: cs.borderRadius, display: cs.display, boxShadow: cs.boxShadow, width: Math.round(r.width)+'px', height: Math.round(r.height)+'px', paddingTop: cs.paddingTop, paddingRight: cs.paddingRight, paddingBottom: cs.paddingBottom, paddingLeft: cs.paddingLeft, marginTop: cs.marginTop, marginRight: cs.marginRight, marginBottom: cs.marginBottom, marginLeft: cs.marginLeft }));
+      }
+      document.addEventListener('mouseover', onOver, true);
+      document.addEventListener('click', onClick, true);
+      window.__svInspectCleanup = () => {
+        document.removeEventListener('mouseover', onOver, true);
+        document.removeEventListener('click', onClick, true);
+        hl.remove(); delete window.__svInspectCleanup;
+      };
+    })()`;
+
+    const CLEANUP_INSPECTOR = `if (window.__svInspectCleanup) window.__svInspectCleanup()`;
+
+    function onConsoleMessage(e) {
+      if (!e.message.startsWith('__sv__')) return;
+      const data = JSON.parse(e.message.slice(6));
+      if (data.type !== 'inspect') return;
+      inspectTagLabel.textContent = '<' + data.tag + '>';
+      iFieldText.value = data.text;
+      iFieldFontSize.value = data.fontSize;
+      iFieldFontWeight.value = data.fontWeight;
+      iFieldLineHeight.value = data.lineHeight;
+      iFieldLetterSpacing.value = data.letterSpacing;
+      iFieldFontFamily.value = data.fontFamily;
+      iFieldColor.value = rgbToHex(data.color);
+      iFieldBg.value = rgbToHex(data.backgroundColor);
+      iFieldOpacity.value = data.opacity;
+      iFieldBorderRadius.value = data.borderRadius;
+      iFieldDisplay.value = data.display;
+      iFieldBoxShadow.value = data.boxShadow;
+      iFieldWidth.value = data.width;
+      iFieldHeight.value = data.height;
+      iFieldPadTop.value = data.paddingTop;
+      iFieldPadRight.value = data.paddingRight;
+      iFieldPadBottom.value = data.paddingBottom;
+      iFieldPadLeft.value = data.paddingLeft;
+      iFieldMarTop.value = data.marginTop;
+      iFieldMarRight.value = data.marginRight;
+      iFieldMarBottom.value = data.marginBottom;
+      iFieldMarLeft.value = data.marginLeft;
+    }
+
+    function toggleInspect() {
+      inspecting = !inspecting;
+      $('inspectBtn').classList.toggle('active', inspecting);
+      if (inspecting) {
+        inspectPanel.classList.add('visible');
+        if (refs.webview) {
+          refs.webview.executeJavaScript(INJECT_INSPECTOR);
+          refs.webview.addEventListener('console-message', onConsoleMessage);
+        }
+      } else {
+        inspectPanel.classList.remove('visible');
+        inspectPanel.classList.remove('panel-collapsed');
+        panelCollapsed = false;
+        inspectCollapseIcon.style.transform = '';
+        inspectTagLabel.textContent = 'Click an element';
+        if (refs.webview) {
+          refs.webview.executeJavaScript(CLEANUP_INSPECTOR);
+          refs.webview.removeEventListener('console-message', onConsoleMessage);
+        }
+      }
+    }
+
+    function normDim(v) { return /^\d+(\.\d+)?$/.test(v) ? v + 'px' : v; }
+    function normColor(v) { return /^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(v) ? '#' + v : v; }
+
+    function applyOverride() {
+      if (!refs.webview) return;
+      const fs = normDim(iFieldFontSize.value.trim());
+      const fw = iFieldFontWeight.value.trim();
+      const lh = normDim(iFieldLineHeight.value.trim());
+      const ls = normDim(iFieldLetterSpacing.value.trim());
+      const ff = iFieldFontFamily.value.trim();
+      const col = normColor(iFieldColor.value.trim());
+      const bg = normColor(iFieldBg.value.trim());
+      const op = iFieldOpacity.value.trim();
+      const br = normDim(iFieldBorderRadius.value.trim());
+      const disp = iFieldDisplay.value.trim();
+      const bsh = iFieldBoxShadow.value.trim();
+      const w = normDim(iFieldWidth.value.trim());
+      const h = normDim(iFieldHeight.value.trim());
+      const pt = normDim(iFieldPadTop.value.trim());
+      const pr = normDim(iFieldPadRight.value.trim());
+      const pb = normDim(iFieldPadBottom.value.trim());
+      const pl = normDim(iFieldPadLeft.value.trim());
+      const mt = normDim(iFieldMarTop.value.trim());
+      const mr = normDim(iFieldMarRight.value.trim());
+      const mb = normDim(iFieldMarBottom.value.trim());
+      const ml = normDim(iFieldMarLeft.value.trim());
+      refs.webview.executeJavaScript(`
+        if (window.__svLastEl) {
+          if (!window.__svStyle) {
+            window.__svStyle = document.createElement('style');
+            document.head.appendChild(window.__svStyle);
+          }
+          if (!window.__svLastEl.__svId) {
+            window.__svLastEl.__svId = '__sv' + Date.now();
+            window.__svLastEl.setAttribute('data-sv', window.__svLastEl.__svId);
+          }
+          if (!window.__svOverrides) window.__svOverrides = {};
+          window.__svOverrides[window.__svLastEl.__svId] = { fontSize: '${fs}', fontWeight: '${fw}', lineHeight: '${lh}', letterSpacing: '${ls}', fontFamily: '${ff}', color: '${col}', backgroundColor: '${bg}', opacity: '${op}', borderRadius: '${br}', display: '${disp}', boxShadow: '${bsh}', width: '${w}', height: '${h}', paddingTop: '${pt}', paddingRight: '${pr}', paddingBottom: '${pb}', paddingLeft: '${pl}', marginTop: '${mt}', marginRight: '${mr}', marginBottom: '${mb}', marginLeft: '${ml}' };
+          window.__svStyle.textContent = Object.entries(window.__svOverrides)
+            .map(([id, s]) => '[data-sv="'+id+'"] { font-size: '+s.fontSize+' !important; font-weight: '+s.fontWeight+' !important; line-height: '+s.lineHeight+' !important; letter-spacing: '+s.letterSpacing+' !important; font-family: '+s.fontFamily+' !important; color: '+s.color+' !important; background-color: '+s.backgroundColor+' !important; opacity: '+s.opacity+' !important; border-radius: '+s.borderRadius+' !important; display: '+s.display+' !important; box-shadow: '+s.boxShadow+' !important; width: '+s.width+' !important; height: '+s.height+' !important; padding-top: '+s.paddingTop+' !important; padding-right: '+s.paddingRight+' !important; padding-bottom: '+s.paddingBottom+' !important; padding-left: '+s.paddingLeft+' !important; margin-top: '+s.marginTop+' !important; margin-right: '+s.marginRight+' !important; margin-bottom: '+s.marginBottom+' !important; margin-left: '+s.marginLeft+' !important; }')
+            .join('\\n');
+        }
+      `);
+    }
+
+    [iFieldFontSize, iFieldFontWeight, iFieldLineHeight, iFieldLetterSpacing, iFieldFontFamily, iFieldColor, iFieldBg, iFieldOpacity, iFieldBorderRadius, iFieldDisplay, iFieldBoxShadow, iFieldWidth, iFieldHeight, iFieldPadTop, iFieldPadRight, iFieldPadBottom, iFieldPadLeft, iFieldMarTop, iFieldMarRight, iFieldMarBottom, iFieldMarLeft].forEach(f => f.addEventListener('input', applyOverride));
+
+    iFieldText.addEventListener('input', () => {
+      if (!refs.webview) return;
+      refs.webview.executeJavaScript(`if (window.__svLastEl) window.__svLastEl.innerText = ${JSON.stringify(iFieldText.value)}`);
+    });
+
+    function rgbToHex(rgb) {
+      const m = rgb.match(/\d+/g);
+      if (!m || m.length < 3) return rgb;
+      return '#' + m.slice(0,3).map(n => parseInt(n).toString(16).padStart(2,'0')).join('');
+    }
+
+    $('inspectBtn').onclick = toggleInspect;
+
+    $('screenshotBtn').onclick = () => {
+      if (!refs.webview || !state.url) return;
+      if (window.electronAPI) window.electronAPI.takeScreenshot();
+    };
 
     render();
   </script>

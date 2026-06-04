@@ -12,7 +12,14 @@
     "productName": "Screen Viewer",
     "files": [
       "index.html",
-      "main.js"
+      "main.js",
+      "preload.js",
+      "webview-preload.js",
+      "thumbnail.html",
+      "thumbnail-preload.js",
+      "preview.html",
+      "preview-preload.js",
+      "icon.icns"
     ],
     "mac": {
       "target": "dmg",

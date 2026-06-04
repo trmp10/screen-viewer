@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1c1c1c;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      user-select: none;
+    }
+
+    .drag-bar {
+      height: 44px;
+      -webkit-app-region: drag;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+    }
+
+    .traffic-light {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+      flex-shrink: 0;
+      transition: filter 0.1s;
+    }
+
+    .traffic-light:hover { filter: brightness(0.8); }
+    .tl-close { background: #ff5f57; }
+    .tl-min   { background: #febc2e; }
+    .tl-max   { background: #28c840; }
+
+    .image-area {
+      flex: 1;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .image-area::-webkit-scrollbar { width: 6px; height: 6px; }
+    .image-area::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+    .image-wrap {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 100%;
+      min-height: 100%;
+    }
+
+    .image-wrap img {
+      display: block;
+      border-radius: 4px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+      transition: width 0.1s, height 0.1s;
+    }
+
+    .toolbar {
+      height: 60px;
+      background: #111;
+      border-top: 1px solid #242424;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      flex-shrink: 0;
+    }
+
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .zoom-btn {
+      width: 28px;
+      height: 28px;
+      background: #1e1e1e;
+      border: 1px solid #2e2e2e;
+      border-radius: 5px;
+      color: #aaa;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s, color 0.1s;
+      line-height: 1;
+    }
+
+    .zoom-btn:hover { background: #2a2a2a; color: #fff; }
+
+    .zoom-label {
+      width: 44px;
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-discard {
+      height: 32px;
+      padding: 0 16px;
+      background: transparent;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #777;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.1s, color 0.1s;
+    }
+
+    .btn-discard:hover { border-color: #555; color: #ccc; }
+
+    .btn-save {
+      height: 32px;
+      padding: 0 20px;
+      background: #fff;
+      border: none;
+      border-radius: 6px;
+      color: #000;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.1s;
+    }
+
+    .btn-save:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="drag-bar">
+    <button class="traffic-light tl-close" id="closeBtn"  title="Discard"></button>
+    <button class="traffic-light tl-min"   id="minBtn"></button>
+    <button class="traffic-light tl-max"   id="maxBtn"></button>
+  </div>
+
+  <div class="image-area" id="imageArea">
+    <div class="image-wrap">
+      <img id="preview" alt="Screenshot" />
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn-discard" id="discardBtn">Discard</button>
+    <div class="zoom-controls">
+      <button class="zoom-btn" id="zoomOut">−</button>
+      <span class="zoom-label" id="zoomLabel">—</span>
+      <button class="zoom-btn" id="zoomIn">+</button>
+    </div>
+    <button class="btn-save" id="saveBtn">Save to Desktop</button>
+  </div>
+
+  <script>
+    const params   = new URLSearchParams(window.location.search)
+    const filepath = params.get('path')
+    const img      = document.getElementById('preview')
+    const imageArea = document.getElementById('imageArea')
+    const zoomLabel = document.getElementById('zoomLabel')
+
+    let zoom = 1
+    let fitZoom = 1
+
+    function applyZoom() {
+      img.style.width  = Math.round(img.naturalWidth  * zoom) + 'px'
+      img.style.height = Math.round(img.naturalHeight * zoom) + 'px'
+      zoomLabel.textContent = Math.round(zoom * 100) + '%'
+    }
+
+    function calcFitZoom() {
+      const aw = imageArea.clientWidth  - 40
+      const ah = imageArea.clientHeight - 40
+      return Math.min(aw / img.naturalWidth, ah / img.naturalHeight, 1)
+    }
+
+    if (filepath) img.src = 'file://' + filepath
+
+    img.addEventListener('load', () => {
+      fitZoom = calcFitZoom()
+      zoom = fitZoom
+      applyZoom()
+    })
+
+    window.addEventListener('resize', () => {
+      fitZoom = calcFitZoom()
+      if (zoom === fitZoom || zoom < fitZoom) { zoom = fitZoom; applyZoom(); }
+    })
+
+    document.getElementById('zoomIn').onclick  = () => { zoom = Math.min(zoom * 1.25, 4); applyZoom(); }
+    document.getElementById('zoomOut').onclick = () => { zoom = Math.max(zoom / 1.25, 0.05); applyZoom(); }
+
+    // Double-click zoom label to reset to fit
+    zoomLabel.style.cursor = 'pointer'
+    zoomLabel.addEventListener('dblclick', () => { zoom = fitZoom; applyZoom(); })
+
+    document.addEventListener('keydown', e => {
+      if (e.key === '=' || e.key === '+') { zoom = Math.min(zoom * 1.25, 4); applyZoom(); }
+      if (e.key === '-') { zoom = Math.max(zoom / 1.25, 0.05); applyZoom(); }
+      if (e.key === '0') { zoom = fitZoom; applyZoom(); }
+    })
+
+    document.getElementById('saveBtn').onclick    = () => window.previewAPI?.saveToDesktop(filepath)
+    document.getElementById('discardBtn').onclick = () => window.previewAPI?.discard(filepath)
+    document.getElementById('closeBtn').onclick   = () => window.previewAPI?.discard(filepath)
+    document.getElementById('minBtn').onclick     = () => window.previewAPI?.minimize()
+    document.getElementById('maxBtn').onclick     = () => window.previewAPI?.maximize()
+  </script>
+</body>
+</html>
