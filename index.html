@@ -1199,25 +1199,26 @@
       const ml = normDim(iFieldMarLeft.value.trim());
       refs.webview.executeJavaScript(`
         if (window.__svLastEl) {
-          if (!window.__svStyle) {
-            window.__svStyle = document.createElement('style');
-            document.head.appendChild(window.__svStyle);
-          }
-          if (!window.__svLastEl.__svId) {
-            window.__svLastEl.__svId = '__sv' + Date.now();
-            window.__svLastEl.setAttribute('data-sv', window.__svLastEl.__svId);
-          }
-          if (!window.__svOverrides) window.__svOverrides = {};
-          window.__svOverrides[window.__svLastEl.__svId] = { fontSize:'${fs}', fontWeight:'${fw}', lineHeight:'${lh}', letterSpacing:'${ls}', fontFamily:'${ff}', color:'${col}', backgroundColor:'${bg}', opacity:'${op}', borderRadius:'${br}', width:'${w}', height:'${h}', paddingTop:'${pt}', paddingRight:'${pr}', paddingBottom:'${pb}', paddingLeft:'${pl}', marginTop:'${mt}', marginRight:'${mr}', marginBottom:'${mb}', marginLeft:'${ml}' };
-          window.__svStyle.textContent = Object.entries(window.__svOverrides).map(([id, s]) =>
-            '[data-sv="'+id+'"] { ' +
-            'font-size:'+s.fontSize+' !important; font-weight:'+s.fontWeight+' !important; line-height:'+s.lineHeight+' !important; ' +
-            'letter-spacing:'+s.letterSpacing+' !important; font-family:'+s.fontFamily+' !important; ' +
-            'color:'+s.color+' !important; background-color:'+s.backgroundColor+' !important; opacity:'+s.opacity+' !important; ' +
-            'border-radius:'+s.borderRadius+' !important; width:'+s.width+' !important; height:'+s.height+' !important; ' +
-            'padding-top:'+s.paddingTop+' !important; padding-right:'+s.paddingRight+' !important; padding-bottom:'+s.paddingBottom+' !important; padding-left:'+s.paddingLeft+' !important; ' +
-            'margin-top:'+s.marginTop+' !important; margin-right:'+s.marginRight+' !important; margin-bottom:'+s.marginBottom+' !important; margin-left:'+s.marginLeft+' !important; }'
-          ).join('\n');
+          const el = window.__svLastEl;
+          el.style.setProperty('font-size', '${fs}', 'important');
+          el.style.setProperty('font-weight', '${fw}', 'important');
+          el.style.setProperty('line-height', '${lh}', 'important');
+          el.style.setProperty('letter-spacing', '${ls}', 'important');
+          el.style.setProperty('font-family', '${ff}', 'important');
+          el.style.setProperty('color', '${col}', 'important');
+          el.style.setProperty('background-color', '${bg}', 'important');
+          el.style.setProperty('opacity', '${op}', 'important');
+          el.style.setProperty('border-radius', '${br}', 'important');
+          el.style.setProperty('width', '${w}', 'important');
+          el.style.setProperty('height', '${h}', 'important');
+          el.style.setProperty('padding-top', '${pt}', 'important');
+          el.style.setProperty('padding-right', '${pr}', 'important');
+          el.style.setProperty('padding-bottom', '${pb}', 'important');
+          el.style.setProperty('padding-left', '${pl}', 'important');
+          el.style.setProperty('margin-top', '${mt}', 'important');
+          el.style.setProperty('margin-right', '${mr}', 'important');
+          el.style.setProperty('margin-bottom', '${mb}', 'important');
+          el.style.setProperty('margin-left', '${ml}', 'important');
         }
       `);
     }
