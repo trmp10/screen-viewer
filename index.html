@@ -1045,7 +1045,6 @@
     const inspectPanel = $('inspectPanel');
     const inspectTagLabel = $('inspectTagLabel');
     const inspectCollapseIcon = $('inspectCollapseIcon');
-    const inspectHint = $('inspectHint');
     const inspectFields = $('inspectFields');
 
     $('inspectCollapseBtn').onclick = () => {
@@ -1063,8 +1062,6 @@
     const iFieldBg = $('iFieldBg');
     const iFieldOpacity = $('iFieldOpacity');
     const iFieldBorderRadius = $('iFieldBorderRadius');
-    const iFieldDisplay = $('iFieldDisplay');
-    const iFieldBoxShadow = $('iFieldBoxShadow');
     const iFieldMarTop = $('iFieldMarTop');
     const iFieldMarRight = $('iFieldMarRight');
     const iFieldMarBottom = $('iFieldMarBottom');
@@ -1092,7 +1089,22 @@
         window.__svLastEl = el;
         const cs = window.getComputedStyle(el);
         const r = el.getBoundingClientRect();
-        console.log('__sv__' + JSON.stringify({ type:'inspect', tag: el.tagName.toLowerCase(), text: el.innerText.slice(0,120), fontSize: cs.fontSize, fontWeight: cs.fontWeight, lineHeight: cs.lineHeight, letterSpacing: cs.letterSpacing, fontFamily: cs.fontFamily.split(',')[0].trim().replace(/['"]/g,''), color: cs.color, backgroundColor: cs.backgroundColor, opacity: cs.opacity, borderRadius: cs.borderRadius, display: cs.display, boxShadow: cs.boxShadow, width: Math.round(r.width)+'px', height: Math.round(r.height)+'px', paddingTop: cs.paddingTop, paddingRight: cs.paddingRight, paddingBottom: cs.paddingBottom, paddingLeft: cs.paddingLeft, marginTop: cs.marginTop, marginRight: cs.marginRight, marginBottom: cs.marginBottom, marginLeft: cs.marginLeft }));
+        const data = {
+          type: 'inspect',
+          tag: el.tagName.toLowerCase(),
+          text: el.innerText.slice(0, 120),
+          fontSize: cs.fontSize, fontWeight: cs.fontWeight,
+          lineHeight: cs.lineHeight, letterSpacing: cs.letterSpacing,
+          fontFamily: cs.fontFamily.split(',')[0].trim().replace(/['"]/g, ''),
+          color: cs.color, backgroundColor: cs.backgroundColor, opacity: cs.opacity,
+          borderRadius: cs.borderRadius,
+          width: Math.round(r.width) + 'px', height: Math.round(r.height) + 'px',
+          paddingTop: cs.paddingTop, paddingRight: cs.paddingRight,
+          paddingBottom: cs.paddingBottom, paddingLeft: cs.paddingLeft,
+          marginTop: cs.marginTop, marginRight: cs.marginRight,
+          marginBottom: cs.marginBottom, marginLeft: cs.marginLeft,
+        };
+        console.log('__sv__' + JSON.stringify(data));
       }
       document.addEventListener('mouseover', onOver, true);
       document.addEventListener('click', onClick, true);
@@ -1120,8 +1132,6 @@
       iFieldBg.value = rgbToHex(data.backgroundColor);
       iFieldOpacity.value = data.opacity;
       iFieldBorderRadius.value = data.borderRadius;
-      iFieldDisplay.value = data.display;
-      iFieldBoxShadow.value = data.boxShadow;
       iFieldWidth.value = data.width;
       iFieldHeight.value = data.height;
       iFieldPadTop.value = data.paddingTop;
@@ -1170,8 +1180,6 @@
       const bg = normColor(iFieldBg.value.trim());
       const op = iFieldOpacity.value.trim();
       const br = normDim(iFieldBorderRadius.value.trim());
-      const disp = iFieldDisplay.value.trim();
-      const bsh = iFieldBoxShadow.value.trim();
       const w = normDim(iFieldWidth.value.trim());
       const h = normDim(iFieldHeight.value.trim());
       const pt = normDim(iFieldPadTop.value.trim());
@@ -1193,15 +1201,22 @@
             window.__svLastEl.setAttribute('data-sv', window.__svLastEl.__svId);
           }
           if (!window.__svOverrides) window.__svOverrides = {};
-          window.__svOverrides[window.__svLastEl.__svId] = { fontSize: '${fs}', fontWeight: '${fw}', lineHeight: '${lh}', letterSpacing: '${ls}', fontFamily: '${ff}', color: '${col}', backgroundColor: '${bg}', opacity: '${op}', borderRadius: '${br}', display: '${disp}', boxShadow: '${bsh}', width: '${w}', height: '${h}', paddingTop: '${pt}', paddingRight: '${pr}', paddingBottom: '${pb}', paddingLeft: '${pl}', marginTop: '${mt}', marginRight: '${mr}', marginBottom: '${mb}', marginLeft: '${ml}' };
-          window.__svStyle.textContent = Object.entries(window.__svOverrides)
-            .map(([id, s]) => '[data-sv="'+id+'"] { font-size: '+s.fontSize+' !important; font-weight: '+s.fontWeight+' !important; line-height: '+s.lineHeight+' !important; letter-spacing: '+s.letterSpacing+' !important; font-family: '+s.fontFamily+' !important; color: '+s.color+' !important; background-color: '+s.backgroundColor+' !important; opacity: '+s.opacity+' !important; border-radius: '+s.borderRadius+' !important; display: '+s.display+' !important; box-shadow: '+s.boxShadow+' !important; width: '+s.width+' !important; height: '+s.height+' !important; padding-top: '+s.paddingTop+' !important; padding-right: '+s.paddingRight+' !important; padding-bottom: '+s.paddingBottom+' !important; padding-left: '+s.paddingLeft+' !important; margin-top: '+s.marginTop+' !important; margin-right: '+s.marginRight+' !important; margin-bottom: '+s.marginBottom+' !important; margin-left: '+s.marginLeft+' !important; }')
+          window.__svOverrides[window.__svLastEl.__svId] = { fontSize:'${fs}', fontWeight:'${fw}', lineHeight:'${lh}', letterSpacing:'${ls}', fontFamily:'${ff}', color:'${col}', backgroundColor:'${bg}', opacity:'${op}', borderRadius:'${br}', width:'${w}', height:'${h}', paddingTop:'${pt}', paddingRight:'${pr}', paddingBottom:'${pb}', paddingLeft:'${pl}', marginTop:'${mt}', marginRight:'${mr}', marginBottom:'${mb}', marginLeft:'${ml}' };
+          window.__svStyle.textContent = Object.entries(window.__svOverrides).map(([id, s]) =>
+            '[data-sv="'+id+'"] { ' +
+            'font-size:'+s.fontSize+' !important; font-weight:'+s.fontWeight+' !important; line-height:'+s.lineHeight+' !important; ' +
+            'letter-spacing:'+s.letterSpacing+' !important; font-family:'+s.fontFamily+' !important; ' +
+            'color:'+s.color+' !important; background-color:'+s.backgroundColor+' !important; opacity:'+s.opacity+' !important; ' +
+            'border-radius:'+s.borderRadius+' !important; width:'+s.width+' !important; height:'+s.height+' !important; ' +
+            'padding-top:'+s.paddingTop+' !important; padding-right:'+s.paddingRight+' !important; padding-bottom:'+s.paddingBottom+' !important; padding-left:'+s.paddingLeft+' !important; ' +
+            'margin-top:'+s.marginTop+' !important; margin-right:'+s.marginRight+' !important; margin-bottom:'+s.marginBottom+' !important; margin-left:'+s.marginLeft+' !important; }'
+          ).join('\n')
             .join('\\n');
         }
       `);
     }
 
-    [iFieldFontSize, iFieldFontWeight, iFieldLineHeight, iFieldLetterSpacing, iFieldFontFamily, iFieldColor, iFieldBg, iFieldOpacity, iFieldBorderRadius, iFieldDisplay, iFieldBoxShadow, iFieldWidth, iFieldHeight, iFieldPadTop, iFieldPadRight, iFieldPadBottom, iFieldPadLeft, iFieldMarTop, iFieldMarRight, iFieldMarBottom, iFieldMarLeft].forEach(f => f.addEventListener('input', applyOverride));
+    [iFieldFontSize, iFieldFontWeight, iFieldLineHeight, iFieldLetterSpacing, iFieldFontFamily, iFieldColor, iFieldBg, iFieldOpacity, iFieldBorderRadius, iFieldWidth, iFieldHeight, iFieldPadTop, iFieldPadRight, iFieldPadBottom, iFieldPadLeft, iFieldMarTop, iFieldMarRight, iFieldMarBottom, iFieldMarLeft].forEach(f => f.addEventListener('input', applyOverride));
 
     iFieldText.addEventListener('input', () => {
       if (!refs.webview) return;
