@@ -565,6 +565,7 @@
       </button>
     </div>
     <div style="display:flex;gap:8px;flex-shrink:0;">
+    <button class="header-btn" id="releaseBtn" title="Release new version">Release</button>
     <button class="header-icon-btn" id="screenshotBtn" title="Screenshot">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -1078,7 +1079,11 @@
       const hl = document.createElement('div');
       hl.style.cssText = 'position:fixed;pointer-events:none;border:2px solid #4a9eff;background:rgba(74,158,255,0.07);z-index:2147483647;box-sizing:border-box;';
       document.body.appendChild(hl);
+      let locked = false;
       function onOver(e) {
+        if (locked) return;
+        const tag = e.target.tagName;
+        if (tag === 'BODY' || tag === 'HTML') return;
         const r = e.target.getBoundingClientRect();
         hl.style.top = r.top+'px'; hl.style.left = r.left+'px';
         hl.style.width = r.width+'px'; hl.style.height = r.height+'px';
@@ -1086,6 +1091,8 @@
       function onClick(e) {
         e.preventDefault(); e.stopPropagation();
         const el = e.target;
+        if (el.tagName === 'BODY' || el.tagName === 'HTML') return;
+        locked = true;
         window.__svLastEl = el;
         const cs = window.getComputedStyle(el);
         const r = el.getBoundingClientRect();
@@ -1234,6 +1241,36 @@
       if (!refs.webview || !state.url) return;
       if (window.electronAPI) window.electronAPI.takeScreenshot();
     };
+
+    const releaseBtn = $('releaseBtn');
+    releaseBtn.onclick = () => {
+      if (!window.electronAPI) return;
+      releaseBtn.textContent = 'Releasing…';
+      releaseBtn.disabled = true;
+      window.electronAPI.release();
+    };
+    if (window.electronAPI) {
+      window.electronAPI.onReleaseDone((version) => {
+        releaseBtn.textContent = `v${version} shipped`;
+        releaseBtn.style.color = '#4caf50';
+        setTimeout(() => {
+          releaseBtn.textContent = 'Release';
+          releaseBtn.style.color = '';
+          releaseBtn.disabled = false;
+        }, 3000);
+      });
+      window.electronAPI.onReleaseError((msg) => {
+        releaseBtn.textContent = 'Failed';
+        releaseBtn.style.color = '#f44336';
+        releaseBtn.title = msg;
+        setTimeout(() => {
+          releaseBtn.textContent = 'Release';
+          releaseBtn.style.color = '';
+          releaseBtn.title = 'Release new version';
+          releaseBtn.disabled = false;
+        }, 4000);
+      });
+    }
 
     render();
   </script>

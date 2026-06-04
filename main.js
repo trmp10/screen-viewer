@@ -2,6 +2,7 @@ const { app, BrowserWindow, session, ipcMain, shell, screen, nativeImage } = req
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
+const { execSync } = require('child_process')
 
 let activeWebviewContents = null
 
@@ -72,6 +73,29 @@ function createWindow() {
   session.defaultSession.webRequest.onHeadersReceived(stripFrameHeaders)
 
   ipcMain.on('set-fullscreen', (_, val) => win.setFullScreen(val))
+
+  ipcMain.on('release', (event) => {
+    const dir = app.isPackaged
+      ? path.join(os.homedir(), 'Documents', 'Cursor', 'screen-viewer')
+      : __dirname
+    try {
+      const pkgPath = path.join(dir, 'package.json')
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+      const parts = pkg.version.split('.').map(Number)
+      parts[2]++
+      const newVersion = parts.join('.')
+      pkg.version = newVersion
+      fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
+      const opts = { cwd: dir }
+      execSync('git add -A', opts)
+      execSync(`git commit -m "chore: release v${newVersion}"`, opts)
+      execSync(`git tag v${newVersion}`, opts)
+      execSync('git push origin master --tags', opts)
+      event.sender.send('release-done', newVersion)
+    } catch (e) {
+      event.sender.send('release-error', e.message)
+    }
+  })
 
   ipcMain.on('take-screenshot', async () => {
     if (!activeWebviewContents) return
