@@ -59,7 +59,7 @@
       border: 1px solid #2e2e2e;
       border-radius: 6px;
       color: #fff;
-      font-size: 14px;
+      font-size: 16px;
       height: 40px;
       padding: 0 12px;
       outline: none;
@@ -83,6 +83,113 @@
     }
 
     .header-btn:hover { background: #2a2a2a; color: #ccc; border-color: #444; }
+
+    .header-icon-btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #1a1a1a;
+      border: 1px solid #2e2e2e;
+      border-radius: 6px;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.1s;
+      flex-shrink: 0;
+    }
+
+    .header-icon-btn:hover { background: #2a2a2a; color: #ccc; border-color: #444; }
+
+    /* Bookmarks */
+    .bookmark-wrap {
+      position: relative;
+    }
+
+    .bookmark-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      background: #161616;
+      border: 1px solid #2e2e2e;
+      border-radius: 8px;
+      padding: 6px;
+      min-width: 260px;
+      z-index: 300;
+    }
+
+    .bookmark-wrap.open .bookmark-dropdown { display: block; }
+
+    .bookmark-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      color: #aaa;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bookmark-item:hover { background: #222; color: #fff; }
+
+    .bookmark-item-label {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bookmark-del {
+      opacity: 0;
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 2px;
+      line-height: 1;
+    }
+
+    .bookmark-item:hover .bookmark-del { opacity: 1; }
+    .bookmark-del:hover { color: #f66; }
+
+    .bookmark-add-row {
+      display: flex;
+      gap: 6px;
+      padding: 6px 4px 2px;
+      border-top: 1px solid #222;
+      margin-top: 4px;
+    }
+
+    .bookmark-input {
+      flex: 1;
+      background: #0e0e0e;
+      border: 1px solid #2e2e2e;
+      border-radius: 5px;
+      color: #eee;
+      font-size: 12px;
+      padding: 5px 8px;
+      outline: none;
+    }
+
+    .bookmark-input:focus { border-color: #484848; }
+
+    .bookmark-save-btn {
+      height: 28px;
+      padding: 0 10px;
+      background: #222;
+      border: 1px solid #2e2e2e;
+      border-radius: 5px;
+      color: #aaa;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .bookmark-save-btn:hover { background: #2a2a2a; color: #fff; }
 
     /* Tabs */
     .tabs-bar {
@@ -177,6 +284,8 @@
       padding: 28px 24px;
     }
 
+    .main::-webkit-scrollbar { width: 0; height: 0; }
+
     .view-wrap {
       position: relative;
       display: inline-flex;
@@ -184,29 +293,12 @@
       align-items: center;
     }
 
-    .view-label {
-      color: #999;
-      font-size: 11px;
-      margin-bottom: 10px;
-      font-weight: 500;
-      letter-spacing: 0.03em;
-    }
 
     .view-frame {
       display: block;
       position: relative;
       box-shadow: 0 4px 30px rgba(0,0,0,0.7);
     }
-
-    .click-overlay {
-      position: absolute;
-      inset: 0;
-      z-index: 10;
-      cursor: zoom-in;
-    }
-
-    :fullscreen .click-overlay,
-    :-webkit-full-screen .click-overlay { display: none; }
 
     .nav-arrow {
       display: none;
@@ -229,47 +321,22 @@
     }
 
     .nav-arrow:hover { background: rgba(255,255,255,0.22); }
-    :fullscreen .nav-arrow,
-    :-webkit-full-screen .nav-arrow { display: flex; }
+    body.app-fullscreen .nav-arrow { display: flex; }
     .nav-prev { left: 20px; }
     .nav-next { right: 20px; }
 
-    .view-frame svg { display: block; }
+    body.app-fullscreen .header,
+    body.app-fullscreen .tabs-bar,
+    body.app-fullscreen .zoom-card { display: none; }
 
-    .view-frame iframe { display: block; border: none; }
-
-    :fullscreen,
-    :-webkit-full-screen {
+    body.app-fullscreen .main {
+      padding: 0;
       background: #000;
-      display: flex !important;
       align-items: center;
       justify-content: center;
     }
 
 
-    /* Zoom */
-    .zoom-card {
-      position: fixed;
-      bottom: 16px;
-      right: 16px;
-      background: rgba(15,15,15,0.88);
-      border: 1px solid #2a2a2a;
-      border-radius: 8px;
-      padding: 9px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      backdrop-filter: blur(8px);
-    }
-
-    .zoom-label { color: #666; font-size: 11px; }
-    .zoom-val { color: #888; font-size: 11px; width: 34px; text-align: right; }
-
-    input[type="range"] {
-      width: 100px;
-      accent-color: #888;
-      cursor: pointer;
-    }
 
     /* Empty */
     .empty {
@@ -366,8 +433,33 @@
       Screen Viewer
     </span>
     <div class="url-input-wrap">
+      <button class="header-icon-btn" id="fullscreenBtn" title="Fullscreen">
+        <svg id="fsIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+      </button>
+      <div class="bookmark-wrap" id="bookmarkWrap">
+        <button class="header-icon-btn" id="bookmarkBtn" title="Bookmarks">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+        </button>
+        <div class="bookmark-dropdown" id="bookmarkDropdown">
+          <div id="bookmarkList"></div>
+          <div class="bookmark-add-row">
+            <input class="bookmark-input" id="bookmarkInput" placeholder="Add current URL…" />
+            <button class="bookmark-save-btn" id="bookmarkSaveBtn">Save</button>
+          </div>
+        </div>
+      </div>
       <input class="url-input" id="urlInput" type="text" placeholder="http://localhost:3000" spellcheck="false" autocomplete="off" />
-      <button class="header-btn" id="refreshBtn">Refresh</button>
+      <button class="header-icon-btn" id="refreshBtn" title="Refresh">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -377,13 +469,7 @@
 
   <div class="main" id="main"></div>
 
-  <div class="zoom-card">
-    <span class="zoom-label">Zoom</span>
-    <input type="range" id="zoomSlider" min="0.1" max="1" step="0.05" value="0.5" />
-    <span class="zoom-val" id="zoomVal">50%</span>
-  </div>
-
-  <div class="overlay hidden" id="overlay">
+<div class="overlay hidden" id="overlay">
     <div class="modal">
       <h3>Add Screen</h3>
       <div class="field">
@@ -419,23 +505,19 @@
 
     let state = (() => {
       try { return JSON.parse(localStorage.getItem('sv')) || null; } catch { return null; }
-    })() || { url: '', zoom: 0.5, active: 0, views: DEFAULTS };
+    })() || { url: '', zoom: 1, active: 0, views: DEFAULTS };
 
     const $ = id => document.getElementById(id);
     const urlInput = $('urlInput');
     const tabsBar = $('tabsBar');
     const addTabBtn = $('addTabBtn');
     const main = $('main');
-    const zoomSlider = $('zoomSlider');
-    const zoomVal = $('zoomVal');
     const overlay = $('overlay');
     const mName = $('mName');
     const mWidth = $('mWidth');
     const mHeight = $('mHeight');
 
     urlInput.value = state.url;
-    zoomSlider.value = state.zoom;
-    zoomVal.textContent = Math.round(state.zoom * 100) + '%';
 
     function save() {
       localStorage.setItem('sv', JSON.stringify(state));
@@ -487,48 +569,34 @@
       const v = state.views[state.active];
       if (!v) return;
 
-      const w = v.width * state.zoom;
-      const h = v.height * state.zoom;
+      const zoom = fitZoom(v);
+      const w = v.width * zoom;
+      const h = v.height * zoom;
 
       const wrap = document.createElement('div');
       wrap.className = 'view-wrap';
 
-      const label = document.createElement('div');
-      label.className = 'view-label';
-      label.textContent = v.name + ' ' + v.width + 'x' + v.height;
-
       const frame = document.createElement('div');
       frame.className = 'view-frame';
 
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('viewBox', `0 0 ${v.width} ${v.height}`);
-      svg.setAttribute('width', w);
-      svg.setAttribute('height', h);
+      const scaleWrap = document.createElement('div');
+      scaleWrap.style.width = w + 'px';
+      scaleWrap.style.height = h + 'px';
+      scaleWrap.style.overflow = 'hidden';
+      scaleWrap.style.position = 'relative';
 
-      const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-      fo.setAttribute('width', v.width);
-      fo.setAttribute('height', v.height);
-      fo.setAttribute('x', '0');
-      fo.setAttribute('y', '0');
+      const webview = document.createElement('webview');
+      webview.src = state.url;
+      webview.style.width = v.width + 'px';
+      webview.style.height = v.height + 'px';
+      webview.style.transformOrigin = '0 0';
+      webview.style.transform = `scale(${zoom})`;
+      webview.style.display = 'inline-flex';
 
-      const iframe = document.createElement('iframe');
-      iframe.src = state.url;
-      iframe.width = v.width;
-      iframe.height = v.height;
+      scaleWrap.appendChild(webview);
+      frame.appendChild(scaleWrap);
 
-      fo.appendChild(iframe);
-      svg.appendChild(fo);
-      frame.appendChild(svg);
-
-      refs = { svg, fo, iframe, label };
-
-      const clickOverlay = document.createElement('div');
-      clickOverlay.className = 'click-overlay';
-      clickOverlay.onclick = () => {
-        if (frame.requestFullscreen) frame.requestFullscreen();
-        else if (frame.webkitRequestFullscreen) frame.webkitRequestFullscreen();
-      };
-      frame.appendChild(clickOverlay);
+      refs = { scaleWrap, webview };
 
       const prevBtn = document.createElement('button');
       prevBtn.className = 'nav-arrow nav-prev';
@@ -541,7 +609,7 @@
       nextBtn.onclick = () => switchScreen(state.active + 1);
 
       frame.append(prevBtn, nextBtn);
-      wrap.append(label, frame);
+      wrap.append(frame);
       main.appendChild(wrap);
     }
 
@@ -549,22 +617,9 @@
       if (i < 0 || i >= state.views.length) return;
       state.active = i;
       save();
+      renderView();
       renderTabs();
-      const v = state.views[i];
-      if (!v || !refs.svg) { renderView(); return; }
-      if (document.fullscreenElement || document.webkitFullscreenElement) {
-        refs.svg.setAttribute('viewBox', `0 0 ${v.width} ${v.height}`);
-        refs.fo.setAttribute('width', v.width);
-        refs.fo.setAttribute('height', v.height);
-        refs.iframe.width = v.width;
-        refs.iframe.height = v.height;
-        const scale = Math.min(window.screen.width / v.width, window.screen.height / v.height);
-        refs.svg.setAttribute('width', Math.round(v.width * scale));
-        refs.svg.setAttribute('height', Math.round(v.height * scale));
-        if (refs.label) refs.label.textContent = v.name + ' ' + v.width + 'x' + v.height;
-      } else {
-        renderView();
-      }
+      if (isFullscreen) setTimeout(() => applyFullscreenScale(state.views[i]), 50);
     }
 
     function removeView(i) {
@@ -586,17 +641,92 @@
     });
 
     $('refreshBtn').onclick = () => {
-      const frame = main.querySelector('iframe');
-      if (frame) frame.src = frame.src;
+      const wv = main.querySelector('webview');
+      if (wv) wv.reload();
     };
 
-    // Zoom
-    zoomSlider.addEventListener('input', () => {
-      state.zoom = parseFloat(zoomSlider.value);
-      zoomVal.textContent = Math.round(state.zoom * 100) + '%';
+    const PADDING = 56;
+
+    function fitZoom(v) {
+      const aw = main.clientWidth - PADDING;
+      const ah = main.clientHeight - PADDING;
+      return Math.min(aw / v.width, ah / v.height, 1);
+    }
+
+    function applyZoom(zoom) {
+      const v = state.views[state.active];
+      if (!v || !refs.webview) return;
+      refs.webview.style.transform = `scale(${zoom})`;
+      refs.scaleWrap.style.width = Math.round(v.width * zoom) + 'px';
+      refs.scaleWrap.style.height = Math.round(v.height * zoom) + 'px';
+    }
+
+    window.addEventListener('resize', () => {
+      if (!isFullscreen && refs.webview) applyZoom(fitZoom(state.views[state.active]));
+    });
+
+    $('fullscreenBtn').onclick = () => enterFullscreen();
+
+    // Bookmarks
+    const DEFAULT_BOOKMARKS = [
+      'https://dev-admin.finitypay.app/',
+      'https://sta-admin.finitypay.app/',
+    ];
+
+    let bookmarks = (() => {
+      try { return JSON.parse(localStorage.getItem('sv-bookmarks')) || null; } catch { return null; }
+    })() || DEFAULT_BOOKMARKS;
+
+    function saveBookmarks() { localStorage.setItem('sv-bookmarks', JSON.stringify(bookmarks)); }
+
+    function renderBookmarks() {
+      const list = $('bookmarkList');
+      list.innerHTML = '';
+      bookmarks.forEach((url, i) => {
+        const row = document.createElement('div');
+        row.className = 'bookmark-item';
+
+        const lbl = document.createElement('span');
+        lbl.className = 'bookmark-item-label';
+        lbl.textContent = url;
+        lbl.onclick = () => { loadUrl(url); closeBookmarks(); };
+
+        const del = document.createElement('button');
+        del.className = 'bookmark-del';
+        del.textContent = '×';
+        del.onclick = e => { e.stopPropagation(); bookmarks.splice(i, 1); saveBookmarks(); renderBookmarks(); };
+
+        row.append(lbl, del);
+        list.appendChild(row);
+      });
+    }
+
+    function loadUrl(url) {
+      state.url = url;
+      urlInput.value = url;
       save();
       render();
+    }
+
+    function closeBookmarks() { $('bookmarkWrap').classList.remove('open'); }
+
+    $('bookmarkBtn').onclick = e => { e.stopPropagation(); $('bookmarkWrap').classList.toggle('open'); renderBookmarks(); };
+
+    $('bookmarkSaveBtn').onclick = () => {
+      const val = $('bookmarkInput').value.trim() || state.url;
+      if (!val) return;
+      const url = /^https?:\/\//i.test(val) ? val : 'https://' + val;
+      if (!bookmarks.includes(url)) { bookmarks.push(url); saveBookmarks(); renderBookmarks(); }
+      $('bookmarkInput').value = '';
+    };
+
+    $('bookmarkInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('bookmarkSaveBtn').click(); });
+
+    document.addEventListener('click', e => {
+      if (!$('bookmarkWrap').contains(e.target)) closeBookmarks();
     });
+
+    renderBookmarks();
 
     // Add screen modal
     addTabBtn.onclick = () => {
@@ -624,29 +754,45 @@
     $('confirmBtn').onclick = confirmAdd;
     [mName, mWidth, mHeight].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') confirmAdd(); }));
 
-    // Fullscreen: resize SVG to fill screen, restore on exit
-    function onFullscreenChange() {
-      if (!refs.svg) return;
-      const v = state.views[state.active];
-      if (!v) return;
-      if (document.fullscreenElement || document.webkitFullscreenElement) {
-        const scale = Math.min(window.screen.width / v.width, window.screen.height / v.height);
-        refs.svg.setAttribute('width', Math.round(v.width * scale));
-        refs.svg.setAttribute('height', Math.round(v.height * scale));
-      } else {
-        refs.svg.setAttribute('width', Math.round(v.width * state.zoom));
-        refs.svg.setAttribute('height', Math.round(v.height * state.zoom));
-      }
-    }
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+    let isFullscreen = false;
 
-    // Keyboard: left/right arrow to switch screens
+    function applyFullscreenScale(v) {
+      if (!refs.webview || !refs.scaleWrap) return;
+      const scale = Math.min(window.innerWidth / v.width, window.innerHeight / v.height);
+      refs.webview.style.transform = `scale(${scale})`;
+      refs.scaleWrap.style.width = Math.round(v.width * scale) + 'px';
+      refs.scaleWrap.style.height = Math.round(v.height * scale) + 'px';
+    }
+
+    function enterFullscreen() {
+      const v = state.views[state.active];
+      if (!v || !refs.webview) return;
+      isFullscreen = true;
+      document.body.classList.add('app-fullscreen');
+      if (window.electronAPI) window.electronAPI.setFullScreen(true);
+      setTimeout(() => applyFullscreenScale(v), 100);
+    }
+
+    function exitFullscreen() {
+      const v = state.views[state.active];
+      isFullscreen = false;
+      document.body.classList.remove('app-fullscreen');
+      if (window.electronAPI) window.electronAPI.setFullScreen(false);
+      if (refs.webview && v) applyZoom(fitZoom(v));
+    }
+
+    function handleKey(key) {
+      if (key === 'Escape') { exitFullscreen(); return; }
+      if (key === 'ArrowRight') switchScreen(state.active + 1);
+      else if (key === 'ArrowLeft') switchScreen(state.active - 1);
+    }
+
     document.addEventListener('keydown', e => {
       if (e.target.tagName === 'INPUT') return;
-      if (e.key === 'ArrowRight') switchScreen(state.active + 1);
-      else if (e.key === 'ArrowLeft') switchScreen(state.active - 1);
+      handleKey(e.key);
     });
+
+    if (window.electronAPI) window.electronAPI.onKey(handleKey);
 
     render();
   </script>
