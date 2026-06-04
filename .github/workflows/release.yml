@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm ci
+
+      - name: Build DMG
+        run: npm run build
+
+      - name: Get version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Get SHA256
+        id: sha
+        run: |
+          sha=$(shasum -a 256 "dist/Screen Viewer-${{ steps.version.outputs.version }}-arm64.dmg" | awk '{print $1}')
+          echo "sha256=$sha" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "dist/Screen Viewer-${{ steps.version.outputs.version }}-arm64.dmg"
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dispatch tap update
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.TAP_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/trmp10/homebrew-tap/dispatches \
+            -d "{\"event_type\":\"new-release\",\"client_payload\":{\"version\":\"${{ steps.version.outputs.version }}\",\"sha256\":\"${{ steps.sha.outputs.sha256 }}\"}}"
