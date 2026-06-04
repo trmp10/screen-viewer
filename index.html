@@ -402,6 +402,63 @@
       line-height: 1.8;
     }
 
+    /* Update modal */
+    .update-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 600;
+    }
+
+    .update-overlay.hidden { display: none; }
+
+    .update-modal {
+      background: #161616;
+      border: 1px solid #2e2e2e;
+      border-radius: 12px;
+      padding: 28px 24px 20px;
+      width: 300px;
+      text-align: center;
+    }
+
+    .update-modal-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+      line-height: 1;
+    }
+
+    .update-modal-title {
+      color: #eee;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .update-modal-sub {
+      color: #666;
+      font-size: 12px;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .update-modal-close {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #2e2e2e;
+      background: #222;
+      color: #aaa;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .update-modal-close:hover { background: #2a2a2a; color: #fff; }
+    .update-modal-close.hidden { display: none; }
+
     /* Modal */
     .overlay {
       position: fixed;
@@ -774,6 +831,15 @@
     </div>
     </div>
   </div>
+
+<div class="update-overlay hidden" id="updateOverlay">
+  <div class="update-modal">
+    <div class="update-modal-icon" id="updateModalIcon">⏳</div>
+    <div class="update-modal-title" id="updateModalTitle">Updating…</div>
+    <div class="update-modal-sub" id="updateModalSub">Building and pushing release</div>
+    <button class="update-modal-close hidden" id="updateModalClose">Close</button>
+  </div>
+</div>
 
 <div class="overlay hidden" id="overlay">
     <div class="modal">
@@ -1288,31 +1354,35 @@
     $('titleCaretBtn').onclick = e => { e.stopPropagation(); titleWrap.classList.toggle('open'); };
     document.addEventListener('click', e => { if (!titleWrap.contains(e.target)) titleWrap.classList.remove('open'); });
 
+    const updateOverlay = $('updateOverlay');
+    const updateModalIcon = $('updateModalIcon');
+    const updateModalTitle = $('updateModalTitle');
+    const updateModalSub = $('updateModalSub');
+    const updateModalClose = $('updateModalClose');
+
+    function showUpdateModal(icon, title, sub, closeable) {
+      updateModalIcon.textContent = icon;
+      updateModalTitle.textContent = title;
+      updateModalSub.textContent = sub;
+      updateModalClose.classList.toggle('hidden', !closeable);
+      updateOverlay.classList.remove('hidden');
+    }
+
+    updateModalClose.onclick = () => updateOverlay.classList.add('hidden');
+
     const releaseBtn = $('releaseBtn');
     releaseBtn.onclick = () => {
       if (!window.electronAPI) return;
       titleWrap.classList.remove('open');
-      releaseBtn.textContent = 'Updating…';
+      showUpdateModal('⏳', 'Updating…', 'Building and pushing release', false);
       window.electronAPI.release();
     };
     if (window.electronAPI) {
       window.electronAPI.onUpdateDone((version) => {
-        releaseBtn.textContent = `v${version} shipped ✓`;
-        releaseBtn.style.color = '#4caf50';
-        setTimeout(() => {
-          releaseBtn.textContent = 'Update';
-          releaseBtn.style.color = '';
-        }, 3000);
+        showUpdateModal('✅', `v${version} shipped`, 'Homebrew tap updated. Run brew upgrade screen-viewer to install.', true);
       });
       window.electronAPI.onUpdateError((msg) => {
-        releaseBtn.textContent = 'Failed';
-        releaseBtn.style.color = '#f44336';
-        releaseBtn.title = msg;
-        setTimeout(() => {
-          releaseBtn.textContent = 'Update';
-          releaseBtn.style.color = '';
-          releaseBtn.title = '';
-        }, 4000);
+        showUpdateModal('❌', 'Update failed', msg, true);
       });
     }
 
