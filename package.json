@@ -28,10 +28,18 @@
     },
     "dmg": {
       "title": "Screen Viewer"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "trmp10",
+      "repo": "screen-viewer"
     }
   },
   "devDependencies": {
     "electron": "^35.0.0",
     "electron-builder": "^25.0.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3"
   }
 }

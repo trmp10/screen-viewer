@@ -459,6 +459,21 @@
     .update-modal-close:hover { background: #2a2a2a; color: #fff; }
     .update-modal-close.hidden { display: none; }
 
+    .update-modal-install {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: background 0.1s;
+    }
+    .update-modal-install:hover { background: #1d4ed8; }
+    .update-modal-install.hidden { display: none; }
+
     /* Modal */
     .overlay {
       position: fixed;
@@ -873,6 +888,7 @@
     <div class="update-modal-icon" id="updateModalIcon">⏳</div>
     <div class="update-modal-title" id="updateModalTitle">Updating…</div>
     <div class="update-modal-sub" id="updateModalSub">Building and pushing release</div>
+    <button class="update-modal-install hidden" id="updateModalInstall">Install &amp; Restart</button>
     <button class="update-modal-close hidden" id="updateModalClose">Close</button>
   </div>
 </div>
@@ -1416,31 +1432,40 @@
     const updateModalIcon = $('updateModalIcon');
     const updateModalTitle = $('updateModalTitle');
     const updateModalSub = $('updateModalSub');
+    const updateModalInstall = $('updateModalInstall');
     const updateModalClose = $('updateModalClose');
 
-    function showUpdateModal(icon, title, sub, closeable) {
+    function showUpdateModal(icon, title, sub, { closeable = false, installable = false } = {}) {
       updateModalIcon.textContent = icon;
       updateModalTitle.textContent = title;
       updateModalSub.textContent = sub;
+      updateModalInstall.classList.toggle('hidden', !installable);
       updateModalClose.classList.toggle('hidden', !closeable);
       updateOverlay.classList.remove('hidden');
     }
 
     updateModalClose.onclick = () => updateOverlay.classList.add('hidden');
+    updateModalInstall.onclick = () => {
+      if (window.electronAPI) window.electronAPI.installUpdate();
+    };
 
     const releaseBtn = $('releaseBtn');
     releaseBtn.onclick = () => {
       if (!window.electronAPI) return;
       titleWrap.classList.remove('open');
-      showUpdateModal('⏳', 'Updating…', 'Building and pushing release', false);
+      showUpdateModal('⏳', 'Updating…', 'Building and pushing release');
       window.electronAPI.release();
     };
     if (window.electronAPI) {
       window.electronAPI.onUpdateDone((version) => {
-        showUpdateModal('✅', `v${version} shipped`, 'Homebrew tap updated. Run brew upgrade screen-viewer to install.', true);
+        showUpdateModal('✅', `v${version} shipped`, 'Checking for update in the background…', { closeable: true });
+        window.electronAPI.checkForUpdates();
       });
       window.electronAPI.onUpdateError((msg) => {
-        showUpdateModal('❌', 'Update failed', msg, true);
+        showUpdateModal('❌', 'Update failed', msg, { closeable: true });
+      });
+      window.electronAPI.onUpdateDownloaded(() => {
+        showUpdateModal('⬇️', 'Update ready', 'A new version has been downloaded.', { closeable: true, installable: true });
       });
     }
 

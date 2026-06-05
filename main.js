@@ -3,8 +3,13 @@ const path = require('path')
 const fs = require('fs')
 const os = require('os')
 const { execSync } = require('child_process')
+const { autoUpdater } = require('electron-updater')
+
+autoUpdater.autoDownload = true
+autoUpdater.autoInstallOnAppQuit = false
 
 let activeWebviewContents = null
+let mainWin = null
 
 function stripFrameHeaders(details, callback) {
   const headers = { ...details.responseHeaders }
@@ -70,9 +75,19 @@ function createWindow() {
     },
   })
 
+  mainWin = win
+
   session.defaultSession.webRequest.onHeadersReceived(stripFrameHeaders)
 
   ipcMain.on('set-fullscreen', (_, val) => win.setFullScreen(val))
+
+  ipcMain.on('check-for-updates', () => {
+    if (app.isPackaged) autoUpdater.checkForUpdates()
+  })
+
+  ipcMain.on('install-update', () => {
+    autoUpdater.quitAndInstall(false, true)
+  })
 
   ipcMain.on('release', (event) => {
     const dir = app.isPackaged
@@ -179,7 +194,14 @@ app.on('web-contents-created', (_, contents) => {
   })
 })
 
-app.whenReady().then(createWindow)
+autoUpdater.on('update-downloaded', () => {
+  mainWin?.webContents.send('update-downloaded')
+})
+
+app.whenReady().then(() => {
+  createWindow()
+  if (app.isPackaged) autoUpdater.checkForUpdates()
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()

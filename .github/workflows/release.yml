@@ -33,7 +33,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: "dist/Screen Viewer-${{ steps.version.outputs.version }}-arm64.dmg"
+          files: |
+            dist/Screen Viewer-${{ steps.version.outputs.version }}-arm64.dmg
+            dist/latest-mac.yml
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
