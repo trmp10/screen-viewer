@@ -102,7 +102,7 @@ function createWindow() {
     const img = await activeWebviewContents.capturePage()
     const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
     const tempPath = path.join(os.tmpdir(), `sv-${ts}.png`)
-    fs.writeFileSync(tempPath, img.toPNG())
+    fs.writeFileSync(tempPath, img.toPNG({ scaleFactor: 2 }))
     showThumbnail(tempPath)
   })
 
