@@ -1460,8 +1460,9 @@
       window.electronAPI.onUpdateDownloaded(() => {
         showUpdateModal('⬇️', 'Update ready', 'A new version has been downloaded.', { closeable: true, installable: true });
       });
-      window.electronAPI.onUpdateNotAvailable(() => {
-        showUpdateModal('✅', 'Up to date', 'You are on the latest version.', { closeable: true });
+      window.electronAPI.onUpdateNotAvailable(async () => {
+        const v = await window.electronAPI.getVersion();
+        showUpdateModal('✅', 'Up to date', `You are on the latest version (v${v}).`, { closeable: true });
       });
       window.electronAPI.onUpdateError((msg) => {
         showUpdateModal('❌', 'Update check failed', msg, { closeable: true });

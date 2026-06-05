@@ -81,6 +81,8 @@ function createWindow() {
 
   ipcMain.on('set-fullscreen', (_, val) => win.setFullScreen(val))
 
+  ipcMain.handle('get-version', () => app.getVersion())
+
   ipcMain.on('check-for-updates', () => {
     if (app.isPackaged) {
       autoUpdater.checkForUpdates()

@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   release: () => ipcRenderer.send('release'),
   onUpdateDone: (cb) => ipcRenderer.on('release-done', (_, version) => cb(version)),
   onUpdateError: (cb) => ipcRenderer.on('release-error', (_, msg) => cb(msg)),
+  getVersion: () => ipcRenderer.invoke('get-version'),
   checkForUpdates: () => ipcRenderer.send('check-for-updates'),
   onUpdateDownloaded: (cb) => ipcRenderer.on('update-downloaded', () => cb()),
   onUpdateNotAvailable: (cb) => ipcRenderer.on('update-not-available', () => cb()),
