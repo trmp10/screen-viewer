@@ -8,6 +8,8 @@ on:
 jobs:
   release:
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -36,7 +38,6 @@ jobs:
           files: |
             dist/Screen Viewer-${{ steps.version.outputs.version }}-arm64.dmg
             dist/latest-mac.yml
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
