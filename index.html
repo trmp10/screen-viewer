@@ -1453,19 +1453,18 @@
     releaseBtn.onclick = () => {
       if (!window.electronAPI) return;
       titleWrap.classList.remove('open');
-      showUpdateModal('⏳', 'Updating…', 'Building and pushing release');
-      window.electronAPI.release();
+      showUpdateModal('⏳', 'Checking for updates…', 'Looking for a new version');
+      window.electronAPI.checkForUpdates();
     };
     if (window.electronAPI) {
-      window.electronAPI.onUpdateDone((version) => {
-        showUpdateModal('✅', `v${version} shipped`, 'Checking for update in the background…', { closeable: true });
-        window.electronAPI.checkForUpdates();
-      });
-      window.electronAPI.onUpdateError((msg) => {
-        showUpdateModal('❌', 'Update failed', msg, { closeable: true });
-      });
       window.electronAPI.onUpdateDownloaded(() => {
         showUpdateModal('⬇️', 'Update ready', 'A new version has been downloaded.', { closeable: true, installable: true });
+      });
+      window.electronAPI.onUpdateNotAvailable(() => {
+        showUpdateModal('✅', 'Up to date', 'You are on the latest version.', { closeable: true });
+      });
+      window.electronAPI.onUpdateError((msg) => {
+        showUpdateModal('❌', 'Update check failed', msg, { closeable: true });
       });
     }
 

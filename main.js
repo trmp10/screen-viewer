@@ -198,6 +198,14 @@ autoUpdater.on('update-downloaded', () => {
   mainWin?.webContents.send('update-downloaded')
 })
 
+autoUpdater.on('update-not-available', () => {
+  mainWin?.webContents.send('update-not-available')
+})
+
+autoUpdater.on('error', (err) => {
+  mainWin?.webContents.send('update-error', err.message)
+})
+
 app.whenReady().then(() => {
   createWindow()
   if (app.isPackaged) autoUpdater.checkForUpdates()
