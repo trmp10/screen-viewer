@@ -1,6 +1,6 @@
 {
   "name": "screen-viewer",
-  "version": "1.0.28",
+  "version": "1.0.29",
   "description": "Responsive screen viewer for testing apps at multiple resolutions",
   "main": "main.js",
   "scripts": {
@@ -22,7 +22,7 @@
       "icon.icns"
     ],
     "mac": {
-      "target": "dmg",
+      "target": ["dmg", "zip"],
       "category": "public.app-category.developer-tools",
       "icon": "icon.icns"
     },
