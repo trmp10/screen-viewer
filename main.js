@@ -2,7 +2,6 @@ const { app, BrowserWindow, session, ipcMain, shell, screen, nativeImage } = req
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
-const { execSync } = require('child_process')
 const { autoUpdater } = require('electron-updater')
 
 autoUpdater.autoDownload = true
@@ -95,35 +94,13 @@ function createWindow() {
     autoUpdater.quitAndInstall(false, true)
   })
 
-  ipcMain.on('release', (event) => {
-    const dir = app.isPackaged
-      ? path.join(os.homedir(), 'Documents', 'Cursor', 'screen-viewer')
-      : __dirname
-    try {
-      const pkgPath = path.join(dir, 'package.json')
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
-      const parts = pkg.version.split('.').map(Number)
-      parts[2]++
-      const newVersion = parts.join('.')
-      pkg.version = newVersion
-      fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
-      const opts = { cwd: dir }
-      execSync('git add -A', opts)
-      execSync(`git commit -m "chore: release v${newVersion}"`, opts)
-      execSync(`git tag v${newVersion}`, opts)
-      execSync('git push origin master --tags', opts)
-      event.sender.send('release-done', newVersion)
-    } catch (e) {
-      event.sender.send('release-error', e.message)
-    }
-  })
 
   ipcMain.on('take-screenshot', async () => {
     if (!activeWebviewContents) return
     const img = await activeWebviewContents.capturePage()
     const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
     const tempPath = path.join(os.tmpdir(), `sv-${ts}.png`)
-    fs.writeFileSync(tempPath, img.toPNG({ scaleFactor: 2 }))
+    fs.writeFileSync(tempPath, img.toPNG())
     showThumbnail(tempPath)
   })
 
@@ -156,7 +133,7 @@ function createWindow() {
 
   ipcMain.on('preview-maximize', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
-    win?.isMaximized() ? win.unmaximize() : win?.maximize()
+    win?.isMaximized() ? win.unmaximize() : win.maximize()
   })
 
   ipcMain.on('save-to-desktop', (_, tempPath) => {
