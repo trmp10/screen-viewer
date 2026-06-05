@@ -13,12 +13,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - run: npm ci
 
       - name: Build DMG
-        run: npm run build
+        run: npx electron-builder --mac dmg --publish never
 
       - name: Get version
         id: version
