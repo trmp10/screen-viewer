@@ -384,6 +384,30 @@
     body.app-fullscreen .tabs-bar,
     body.app-fullscreen .zoom-card { display: none; }
 
+    .fs-actions {
+      display: none;
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      z-index: 500;
+      background: rgba(20,20,20,0.88);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 6px 8px;
+      gap: 4px;
+      flex-direction: row;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      opacity: 0;
+    }
+    body.app-fullscreen .fs-actions { display: flex; }
+    body.app-fullscreen:hover .fs-actions,
+    body.app-fullscreen .fs-actions:hover {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
     body.app-fullscreen .main {
       padding: 0;
       background: #000;
@@ -752,6 +776,22 @@
   </div>
 
   <div class="main" id="main"></div>
+
+  <div class="fs-actions" id="fsActions">
+    <button class="header-icon-btn" id="fsScreenshotBtn" title="Screenshot">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </button>
+    <button class="header-icon-btn" id="fsInspectBtn" title="Inspect element">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="8 6 2 12 8 18"/>
+        <polyline points="16 6 22 12 16 18"/>
+        <line x1="15" y1="6" x2="9" y2="18"/>
+      </svg>
+    </button>
+  </div>
 
   <div class="inspect-panel" id="inspectPanel">
     <button class="inspect-collapse-tab" id="inspectCollapseBtn" title="Collapse">
@@ -1346,6 +1386,7 @@
     function toggleInspect() {
       inspecting = !inspecting;
       $('inspectBtn').classList.toggle('active', inspecting);
+      $('fsInspectBtn').classList.toggle('active', inspecting);
       if (inspecting) {
         inspectPanel.classList.add('visible');
         inspectToggle.classList.add('on');
@@ -1423,6 +1464,13 @@
       if (!refs.webview || !state.url) return;
       if (window.electronAPI) window.electronAPI.takeScreenshot();
     };
+
+    $('fsScreenshotBtn').onclick = () => {
+      if (!refs.webview || !state.url) return;
+      if (window.electronAPI) window.electronAPI.takeScreenshot();
+    };
+
+    $('fsInspectBtn').onclick = toggleInspect;
 
     const titleWrap = $('titleWrap');
     $('titleCaretBtn').onclick = e => { e.stopPropagation(); titleWrap.classList.toggle('open'); };
