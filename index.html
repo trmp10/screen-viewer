@@ -402,11 +402,21 @@
       opacity: 0;
     }
     body.app-fullscreen .fs-actions { display: flex; }
-    body.app-fullscreen:hover .fs-actions,
-    body.app-fullscreen .fs-actions:hover {
+    body.app-fullscreen .fs-actions.fs-visible {
       transform: translateX(-50%) translateY(0);
       opacity: 1;
     }
+
+    .fs-hover-zone {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      z-index: 499;
+    }
+    body.app-fullscreen .fs-hover-zone { display: block; }
 
     body.app-fullscreen .main {
       padding: 0;
@@ -777,6 +787,7 @@
 
   <div class="main" id="main"></div>
 
+  <div class="fs-hover-zone" id="fsHoverZone"></div>
   <div class="fs-actions" id="fsActions">
     <button class="header-icon-btn" id="fsScreenshotBtn" title="Screenshot">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -1467,8 +1478,15 @@
 
     $('fsScreenshotBtn').onclick = () => {
       if (!refs.webview || !state.url) return;
-      if (window.electronAPI) window.electronAPI.takeScreenshot();
+      if (window.electronAPI) window.electronAPI.takeScreenshotDesktop();
     };
+
+    const fsHoverZone = $('fsHoverZone');
+    const fsActions = $('fsActions');
+    fsHoverZone.addEventListener('mouseenter', () => fsActions.classList.add('fs-visible'));
+    fsHoverZone.addEventListener('mouseleave', () => fsActions.classList.remove('fs-visible'));
+    fsActions.addEventListener('mouseenter', () => fsActions.classList.add('fs-visible'));
+    fsActions.addEventListener('mouseleave', () => fsActions.classList.remove('fs-visible'));
 
     $('fsInspectBtn').onclick = toggleInspect;
 

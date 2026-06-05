@@ -104,6 +104,14 @@ function createWindow() {
     showThumbnail(tempPath)
   })
 
+  ipcMain.on('take-screenshot-desktop', async () => {
+    if (!activeWebviewContents) return
+    const img = await activeWebviewContents.capturePage()
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const destPath = path.join(os.homedir(), 'Desktop', `sv-${ts}.png`)
+    fs.writeFileSync(destPath, img.toPNG())
+  })
+
   ipcMain.on('start-drag', (event, tempPath) => {
     const icon = nativeImage.createFromPath(tempPath).resize({ width: 64 })
     event.sender.startDrag({ file: tempPath, icon })
