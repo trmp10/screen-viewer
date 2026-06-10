@@ -6,6 +6,7 @@ const { autoUpdater } = require('electron-updater')
 
 autoUpdater.autoDownload = true
 autoUpdater.autoInstallOnAppQuit = false
+autoUpdater.verifyUpdateCodeSignature = () => Promise.resolve(null)
 
 let activeWebviewContents = null
 let mainWin = null
