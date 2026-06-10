@@ -100,6 +100,7 @@
     }
 
     .header-icon-btn:hover { background: #2a2a2a; color: #ccc; border-color: #444; }
+    .header-icon-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
 
     /* Title dropdown */
     .title-wrap {
@@ -750,6 +751,16 @@
           </div>
         </div>
       </div>
+      <button class="header-icon-btn" id="backBtn" title="Back" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <button class="header-icon-btn" id="forwardBtn" title="Forward" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
       <input class="url-input" id="urlInput" type="text" placeholder="http://localhost:3000" spellcheck="false" autocomplete="off" />
       <button class="header-icon-btn" id="refreshBtn" title="Refresh">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -1075,12 +1086,14 @@
         state.url = e.url;
         urlInput.value = e.url;
         save();
+        updateNavButtons();
       });
       webview.addEventListener('did-navigate-in-page', e => {
         if (e.isMainFrame) {
           state.url = e.url;
           urlInput.value = e.url;
           save();
+          updateNavButtons();
         }
       });
 
@@ -1135,6 +1148,22 @@
       const wv = main.querySelector('webview');
       if (wv) wv.reload();
     };
+
+    $('backBtn').onclick = () => {
+      const wv = main.querySelector('webview');
+      if (wv) wv.goBack();
+    };
+
+    $('forwardBtn').onclick = () => {
+      const wv = main.querySelector('webview');
+      if (wv) wv.goForward();
+    };
+
+    function updateNavButtons() {
+      const wv = main.querySelector('webview');
+      $('backBtn').disabled = !wv || !wv.canGoBack();
+      $('forwardBtn').disabled = !wv || !wv.canGoForward();
+    }
 
     const PADDING = 56;
 
