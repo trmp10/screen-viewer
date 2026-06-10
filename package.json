@@ -9,7 +9,7 @@
   },
   "build": {
     "appId": "co.finity.screen-viewer",
-    "productName": "Screen Viewer",
+    "productName": "Screen-Viewer",
     "files": [
       "index.html",
       "main.js",
