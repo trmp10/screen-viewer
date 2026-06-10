@@ -1071,6 +1071,19 @@
       webview.style.transform = `scale(${zoom})`;
       webview.style.display = 'inline-flex';
 
+      webview.addEventListener('did-navigate', e => {
+        state.url = e.url;
+        urlInput.value = e.url;
+        save();
+      });
+      webview.addEventListener('did-navigate-in-page', e => {
+        if (e.isMainFrame) {
+          state.url = e.url;
+          urlInput.value = e.url;
+          save();
+        }
+      });
+
       scaleWrap.appendChild(webview);
       frame.appendChild(scaleWrap);
 
