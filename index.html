@@ -1528,33 +1528,30 @@
       if (window.electronAPI) window.electronAPI.installUpdate();
     };
 
-    let manualUpdateCheck = false;
     const releaseBtn = $('releaseBtn');
     releaseBtn.onclick = () => {
       if (!window.electronAPI) return;
       titleWrap.classList.remove('open');
-      manualUpdateCheck = true;
       showUpdateModal('⏳', 'Checking for updates…', 'Looking for a new version');
       window.electronAPI.checkForUpdates();
     };
     if (window.electronAPI) {
+      window.electronAPI.onUpdateAvailable((version) => {
+        showUpdateModal('⬇️', `Downloading v${version}…`, '0%');
+      });
+      window.electronAPI.onUpdateProgress((pct) => {
+        updateModalSub.textContent = pct + '%';
+      });
       window.electronAPI.onUpdateDownloaded(() => {
-        showUpdateModal('⬇️', 'Update ready', 'A new version has been downloaded.', { closeable: true, installable: true });
+        showUpdateModal('✅', 'Update ready', 'Restart to apply the new version.', { closeable: true, installable: true });
       });
       window.electronAPI.onUpdateNotAvailable(() => {
-        // only show modal if triggered manually via the Update button
-        if (manualUpdateCheck) {
-          window.electronAPI.getVersion().then(v => {
-            showUpdateModal('✅', 'Up to date', `You are on the latest version (v${v}).`, { closeable: true });
-          });
-          manualUpdateCheck = false;
-        }
+        window.electronAPI.getVersion().then(v => {
+          showUpdateModal('✅', 'Up to date', `You are on the latest version (v${v}).`, { closeable: true });
+        });
       });
       window.electronAPI.onUpdateError((msg) => {
-        if (manualUpdateCheck) {
-          showUpdateModal('❌', 'Update check failed', msg, { closeable: true });
-          manualUpdateCheck = false;
-        }
+        showUpdateModal('❌', 'Update failed', msg, { closeable: true });
       });
     }
 
