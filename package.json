@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --mac dmg"
+    "build": "electron-builder --mac dmg zip",
+    "publish": "rm -rf dist && electron-builder --mac dmg zip && VERSION=$(node -p \"require('./package.json').version\") && gh release create v$VERSION dist/Screen-Viewer-$VERSION-arm64.dmg dist/Screen-Viewer-$VERSION-arm64.dmg.blockmap dist/Screen-Viewer-$VERSION-arm64-mac.zip dist/Screen-Viewer-$VERSION-arm64-mac.zip.blockmap dist/latest-mac.yml --title \"v$VERSION\" --repo trmp10/screen-viewer"
   },
   "build": {
     "appId": "co.finity.screen-viewer",
@@ -22,9 +23,10 @@
       "icon.icns"
     ],
     "mac": {
-      "target": ["dmg"],
+      "target": ["dmg", "zip"],
       "category": "public.app-category.developer-tools",
-      "icon": "icon.icns"
+      "icon": "icon.icns",
+      "identity": null
     },
     "dmg": {
       "title": "Screen Viewer"
