@@ -22,7 +22,7 @@
       "icon.icns"
     ],
     "mac": {
-      "target": ["dmg", "zip"],
+      "target": ["dmg"],
       "category": "public.app-category.developer-tools",
       "icon": "icon.icns"
     },
