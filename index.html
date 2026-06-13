@@ -248,6 +248,11 @@
     .bookmark-save-btn:hover { background: #2a2a2a; color: #fff; }
 
     /* Tabs */
+    .url-tabs-bar {
+      background: #0d0d0d;
+      height: 38px !important;
+    }
+
     .tabs-bar {
       background: #111;
       border-bottom: 1px solid #222;
@@ -383,6 +388,7 @@
 
     body.app-fullscreen .header,
     body.app-fullscreen .tabs-bar,
+    body.app-fullscreen .url-tabs-bar,
     body.app-fullscreen .zoom-card { display: none; }
 
     .fs-actions {
@@ -768,10 +774,11 @@
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
         </svg>
       </button>
-      <button class="header-icon-btn" id="fullscreenBtn" title="Fullscreen">
-        <svg id="fsIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-          <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+      <button class="header-icon-btn" id="inspectBtn" title="Inspect element">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="8 6 2 12 8 18"/>
+          <polyline points="16 6 22 12 16 18"/>
+          <line x1="15" y1="6" x2="9" y2="18"/>
         </svg>
       </button>
     </div>
@@ -782,11 +789,10 @@
         <circle cx="12" cy="13" r="4"/>
       </svg>
     </button>
-    <button class="header-icon-btn" id="inspectBtn" title="Inspect element">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="8 6 2 12 8 18"/>
-        <polyline points="16 6 22 12 16 18"/>
-        <line x1="15" y1="6" x2="9" y2="18"/>
+    <button class="header-icon-btn" id="fullscreenBtn" title="Fullscreen">
+      <svg id="fsIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+        <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
       </svg>
     </button>
     </div>
@@ -794,6 +800,10 @@
 
   <div class="tabs-bar" id="tabsBar">
     <button class="tab-add" id="addTabBtn" title="Add screen">+</button>
+  </div>
+
+  <div class="tabs-bar url-tabs-bar" id="urlTabsBar">
+    <button class="tab-add" id="addUrlTabBtn" title="Add URL tab">+</button>
   </div>
 
   <div class="main" id="main"></div>
@@ -982,16 +992,24 @@
   <script>
     const DEFAULTS = [
       { name: 'FHD', width: 1920, height: 1080 },
+      { name: 'MacBook 14"', width: 1440, height: 900 },
       { name: 'HD', width: 1366, height: 768 },
       { name: 'MacBook Air', width: 1280, height: 800 },
-      { name: 'MacBook 14"', width: 1440, height: 900 },
     ];
 
     let refs = {};
+    let viewEls = [];
 
     let state = (() => {
-      try { return JSON.parse(localStorage.getItem('sv')) || null; } catch { return null; }
-    })() || { url: '', zoom: 1, active: 0, views: DEFAULTS };
+      try {
+        const s = JSON.parse(localStorage.getItem('sv')) || null;
+        if (!s) return null;
+        if (s.url !== undefined && !s.urls) {
+          return { urls: s.url ? [s.url] : [], activeUrl: 0, active: s.active || 0, views: s.views || DEFAULTS };
+        }
+        return s;
+      } catch { return null; }
+    })() || { urls: [], activeUrl: 0, active: 3, views: DEFAULTS };
 
     const $ = id => document.getElementById(id);
     const urlInput = $('urlInput');
@@ -1003,16 +1021,71 @@
     const mWidth = $('mWidth');
     const mHeight = $('mHeight');
 
-    urlInput.value = state.url;
+    urlInput.value = state.urls[state.activeUrl] || '';
 
     function save() {
       localStorage.setItem('sv', JSON.stringify(state));
     }
 
+    function urlLabel(url) {
+      try { const h = new URL(url).host; return h || url; } catch { return url || 'New tab'; }
+    }
+
     function render() {
       renderTabs();
+      renderUrlTabs();
       renderView();
     }
+
+    const urlTabsBar = $('urlTabsBar');
+    const addUrlTabBtn = $('addUrlTabBtn');
+
+    function renderUrlTabs() {
+      urlTabsBar.querySelectorAll('.tab').forEach(t => t.remove());
+      state.urls.forEach((url, i) => {
+        const tab = document.createElement('div');
+        tab.className = 'tab' + (i === state.activeUrl ? ' active' : '');
+        const name = document.createElement('span');
+        name.className = 'tab-name';
+        name.textContent = urlLabel(url);
+        const close = document.createElement('button');
+        close.className = 'tab-close';
+        close.textContent = '×';
+        close.onclick = e => { e.stopPropagation(); removeUrlTab(i); };
+        tab.append(name, close);
+        tab.onclick = () => switchUrl(i);
+        urlTabsBar.insertBefore(tab, addUrlTabBtn);
+      });
+    }
+
+    function switchUrl(i) {
+      state.activeUrl = i;
+      urlInput.value = state.urls[i] || '';
+      save();
+      renderUrlTabs();
+      renderView();
+    }
+
+    function removeUrlTab(i) {
+      if (viewEls[i]) {
+        viewEls[i].forEach(el => { if (el) el.wrap.remove(); });
+        viewEls.splice(i, 1);
+      }
+      state.urls.splice(i, 1);
+      if (state.activeUrl >= state.urls.length) state.activeUrl = Math.max(0, state.urls.length - 1);
+      urlInput.value = state.urls[state.activeUrl] || '';
+      save();
+      render();
+    }
+
+    addUrlTabBtn.onclick = () => {
+      state.urls.push('');
+      state.activeUrl = state.urls.length - 1;
+      save();
+      render();
+      urlInput.value = '';
+      urlInput.focus();
+    };
 
     function renderTabs() {
       tabsBar.querySelectorAll('.tab').forEach(t => t.remove());
@@ -1043,78 +1116,101 @@
     }
 
     function renderView() {
-      main.innerHTML = '';
+      const activeUrl = state.urls[state.activeUrl];
 
-      if (!state.url) {
-        main.innerHTML = '<div class="empty">Enter a URL above and press Enter</div>';
+      if (!state.urls[state.activeUrl]s.length || !activeUrl) {
+        main.innerHTML = '<div class="empty">Add a URL tab above and enter a URL</div>';
+        refs = {};
         return;
       }
 
       if (!state.views.length) {
         main.innerHTML = '<div class="empty">No screens. Click + to add one.</div>';
+        refs = {};
         return;
       }
 
-      const v = state.views[state.active];
-      if (!v) return;
+      if (main.querySelector('.empty')) {
+        main.innerHTML = '';
+      }
 
-      const zoom = fitZoom(v);
-      const w = v.width * zoom;
-      const h = v.height * zoom;
+      while (viewEls.length < state.urls.length) viewEls.push([]);
 
-      const wrap = document.createElement('div');
-      wrap.className = 'view-wrap';
+      state.urls.forEach((url, ui) => {
+        if (!url) return;
+        if (!viewEls[ui]) viewEls[ui] = [];
+        state.views.forEach((v, si) => {
+          if (viewEls[ui][si]) return;
 
-      const frame = document.createElement('div');
-      frame.className = 'view-frame';
+          const zoom = fitZoom(v);
+          const wrap = document.createElement('div');
+          wrap.className = 'view-wrap';
 
-      const scaleWrap = document.createElement('div');
-      scaleWrap.style.width = w + 'px';
-      scaleWrap.style.height = h + 'px';
-      scaleWrap.style.overflow = 'hidden';
-      scaleWrap.style.position = 'relative';
+          const frame = document.createElement('div');
+          frame.className = 'view-frame';
 
-      const webview = document.createElement('webview');
-      webview.src = state.url;
-      webview.style.width = v.width + 'px';
-      webview.style.height = v.height + 'px';
-      webview.style.transformOrigin = '0 0';
-      webview.style.transform = `scale(${zoom})`;
-      webview.style.display = 'inline-flex';
+          const scaleWrap = document.createElement('div');
+          scaleWrap.style.width = v.width * zoom + 'px';
+          scaleWrap.style.height = v.height * zoom + 'px';
+          scaleWrap.style.overflow = 'hidden';
+          scaleWrap.style.position = 'relative';
 
-      webview.addEventListener('did-navigate', e => {
-        state.url = e.url;
-        urlInput.value = e.url;
-        save();
-        updateNavButtons();
+          const webview = document.createElement('webview');
+          webview.src = url;
+          webview.style.width = v.width + 'px';
+          webview.style.height = v.height + 'px';
+          webview.style.transformOrigin = '0 0';
+          webview.style.transform = `scale(${zoom})`;
+          webview.style.display = 'inline-flex';
+
+          webview.addEventListener('did-navigate', e => {
+            if (ui === state.activeUrl) {
+              state.urls[ui] = e.url;
+              urlInput.value = e.url;
+              renderUrlTabs();
+              save();
+              updateNavButtons();
+            }
+          });
+          webview.addEventListener('did-navigate-in-page', e => {
+            if (e.isMainFrame && ui === state.activeUrl) {
+              state.urls[ui] = e.url;
+              urlInput.value = e.url;
+              renderUrlTabs();
+              save();
+              updateNavButtons();
+            }
+          });
+
+          scaleWrap.appendChild(webview);
+          frame.appendChild(scaleWrap);
+
+          const prevBtn = document.createElement('button');
+          prevBtn.className = 'nav-arrow nav-prev';
+          prevBtn.innerHTML = '&#8249;';
+          prevBtn.onclick = () => switchScreen(state.active - 1);
+
+          const nextBtn = document.createElement('button');
+          nextBtn.className = 'nav-arrow nav-next';
+          nextBtn.innerHTML = '&#8250;';
+          nextBtn.onclick = () => switchScreen(state.active + 1);
+
+          frame.append(prevBtn, nextBtn);
+          wrap.append(frame);
+          main.appendChild(wrap);
+
+          viewEls[ui][si] = { wrap, scaleWrap, webview };
+        });
       });
-      webview.addEventListener('did-navigate-in-page', e => {
-        if (e.isMainFrame) {
-          state.url = e.url;
-          urlInput.value = e.url;
-          save();
-          updateNavButtons();
-        }
+
+      viewEls.forEach((urlViews, ui) => {
+        (urlViews || []).forEach((el, si) => {
+          if (el) el.wrap.style.display = (ui === state.activeUrl && si === state.active) ? '' : 'none';
+        });
       });
 
-      scaleWrap.appendChild(webview);
-      frame.appendChild(scaleWrap);
-
-      refs = { scaleWrap, webview };
-
-      const prevBtn = document.createElement('button');
-      prevBtn.className = 'nav-arrow nav-prev';
-      prevBtn.innerHTML = '&#8249;';
-      prevBtn.onclick = () => switchScreen(state.active - 1);
-
-      const nextBtn = document.createElement('button');
-      nextBtn.className = 'nav-arrow nav-next';
-      nextBtn.innerHTML = '&#8250;';
-      nextBtn.onclick = () => switchScreen(state.active + 1);
-
-      frame.append(prevBtn, nextBtn);
-      wrap.append(frame);
-      main.appendChild(wrap);
+      refs = (viewEls[state.activeUrl] || [])[state.active] || {};
+      updateNavButtons();
     }
 
     function switchScreen(i) {
@@ -1127,6 +1223,9 @@
     }
 
     function removeView(i) {
+      viewEls.forEach(urlViews => {
+        if (urlViews && urlViews[i]) { urlViews[i].wrap.remove(); urlViews.splice(i, 1); }
+      });
       state.views.splice(i, 1);
       if (state.active >= state.views.length) state.active = Math.max(0, state.views.length - 1);
       save();
@@ -1138,31 +1237,22 @@
       if (e.key !== 'Enter') return;
       let val = urlInput.value.trim();
       if (val && !/^https?:\/\//i.test(val)) val = 'http://' + val;
-      state.url = val;
       urlInput.value = val;
+      if (!state.urls[state.activeUrl]s.length) { state.urls.push(val); state.activeUrl = 0; }
+      else { state.urls[state.activeUrl] = val; }
       save();
+      const urlViews = viewEls[state.activeUrl];
+      if (urlViews) urlViews.forEach(el => { if (el) el.webview.src = val; });
       render();
     });
 
-    $('refreshBtn').onclick = () => {
-      const wv = main.querySelector('webview');
-      if (wv) wv.reload();
-    };
-
-    $('backBtn').onclick = () => {
-      const wv = main.querySelector('webview');
-      if (wv) wv.goBack();
-    };
-
-    $('forwardBtn').onclick = () => {
-      const wv = main.querySelector('webview');
-      if (wv) wv.goForward();
-    };
+    $('refreshBtn').onclick = () => { if (refs.webview) refs.webview.reload(); };
+    $('backBtn').onclick = () => { if (refs.webview) refs.webview.goBack(); };
+    $('forwardBtn').onclick = () => { if (refs.webview) refs.webview.goForward(); };
 
     function updateNavButtons() {
-      const wv = main.querySelector('webview');
-      $('backBtn').disabled = !wv || !wv.canGoBack();
-      $('forwardBtn').disabled = !wv || !wv.canGoForward();
+      $('backBtn').disabled = !refs.webview || !refs.webview.canGoBack();
+      $('forwardBtn').disabled = !refs.webview || !refs.webview.canGoForward();
     }
 
     const PADDING = 56;
@@ -1223,8 +1313,11 @@
     }
 
     function loadUrl(url) {
-      state.url = url;
+      if (!state.urls[state.activeUrl]s.length) { state.urls.push(url); state.activeUrl = 0; }
+      else { state.urls[state.activeUrl] = url; }
       urlInput.value = url;
+      const urlViews = viewEls[state.activeUrl];
+      if (urlViews) urlViews.forEach(el => { if (el) el.webview.src = url; });
       save();
       render();
     }
@@ -1234,7 +1327,7 @@
     $('bookmarkBtn').onclick = e => { e.stopPropagation(); $('bookmarkWrap').classList.toggle('open'); renderBookmarks(); };
 
     $('bookmarkSaveBtn').onclick = () => {
-      const val = $('bookmarkInput').value.trim() || state.url;
+      const val = $('bookmarkInput').value.trim() || state.urls[state.activeUrl] || '';
       if (!val) return;
       const url = /^https?:\/\//i.test(val) ? val : 'https://' + val;
       if (!bookmarks.includes(url)) { bookmarks.push(url); saveBookmarks(); renderBookmarks(); }
@@ -1514,12 +1607,12 @@
     };
 
     $('screenshotBtn').onclick = () => {
-      if (!refs.webview || !state.url) return;
+      if (!refs.webview || !state.urls[state.activeUrl]) return;
       if (window.electronAPI) window.electronAPI.takeScreenshot();
     };
 
     $('fsScreenshotBtn').onclick = () => {
-      if (!refs.webview || !state.url) return;
+      if (!refs.webview || !state.urls[state.activeUrl]) return;
       if (window.electronAPI) window.electronAPI.takeScreenshotDesktop();
     };
 
