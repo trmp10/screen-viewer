@@ -1,6 +1,6 @@
 {
   "name": "screen-viewer",
-  "version": "1.0.38",
+  "version": "1.0.39",
   "description": "Responsive screen viewer for testing apps at multiple resolutions",
   "main": "main.js",
   "scripts": {
