@@ -1011,6 +1011,11 @@
       } catch { return null; }
     })() || { urls: [], activeUrl: 0, active: 3, views: DEFAULTS };
 
+    if (!Array.isArray(state.views) || !state.views.length) state.views = DEFAULTS;
+    if (!Array.isArray(state.urls)) state.urls = [];
+    if (typeof state.activeUrl !== 'number' || state.activeUrl >= state.urls.length) state.activeUrl = 0;
+    if (typeof state.active !== 'number' || state.active >= state.views.length) state.active = Math.min(3, state.views.length - 1);
+
     const $ = id => document.getElementById(id);
     const urlInput = $('urlInput');
     const tabsBar = $('tabsBar');
