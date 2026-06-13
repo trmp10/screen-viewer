@@ -1243,7 +1243,7 @@
       let val = urlInput.value.trim();
       if (val && !/^https?:\/\//i.test(val)) val = 'http://' + val;
       urlInput.value = val;
-      if (!state.urls[state.activeUrl]s.length) { state.urls.push(val); state.activeUrl = 0; }
+      if (!state.urls.length) { state.urls.push(val); state.activeUrl = 0; }
       else { state.urls[state.activeUrl] = val; }
       save();
       const urlViews = viewEls[state.activeUrl];
@@ -1318,7 +1318,7 @@
     }
 
     function loadUrl(url) {
-      if (!state.urls[state.activeUrl]s.length) { state.urls.push(url); state.activeUrl = 0; }
+      if (!state.urls.length) { state.urls.push(url); state.activeUrl = 0; }
       else { state.urls[state.activeUrl] = url; }
       urlInput.value = url;
       const urlViews = viewEls[state.activeUrl];
