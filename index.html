@@ -1123,7 +1123,7 @@
     function renderView() {
       const activeUrl = state.urls[state.activeUrl];
 
-      if (!state.urls[state.activeUrl]s.length || !activeUrl) {
+      if (!state.urls.length || !activeUrl) {
         main.innerHTML = '<div class="empty">Add a URL tab above and enter a URL</div>';
         refs = {};
         return;
