@@ -1009,7 +1009,7 @@
         }
         return s;
       } catch { return null; }
-    })() || { urls: [], activeUrl: 0, active: 3, views: DEFAULTS };
+    })() || { urls: ['http://localhost:3000/'], activeUrl: 0, active: 3, views: DEFAULTS };
 
     if (!Array.isArray(state.views) || !state.views.length) state.views = DEFAULTS;
     if (!Array.isArray(state.urls)) state.urls = [];
@@ -1168,24 +1168,20 @@
           webview.style.transform = `scale(${zoom})`;
           webview.style.display = 'inline-flex';
 
-          webview.addEventListener('did-navigate', e => {
+          const onNavigate = (url) => {
+            state.urls[ui] = url;
             if (ui === state.activeUrl) {
-              state.urls[ui] = e.url;
-              urlInput.value = e.url;
+              urlInput.value = url;
               renderUrlTabs();
-              save();
               updateNavButtons();
             }
-          });
-          webview.addEventListener('did-navigate-in-page', e => {
-            if (e.isMainFrame && ui === state.activeUrl) {
-              state.urls[ui] = e.url;
-              urlInput.value = e.url;
-              renderUrlTabs();
-              save();
-              updateNavButtons();
-            }
-          });
+            (viewEls[ui] || []).forEach((el, i) => {
+              if (el && i !== si && el.webview.getURL() !== url) el.webview.loadURL(url);
+            });
+            save();
+          };
+          webview.addEventListener('did-navigate', e => onNavigate(e.url));
+          webview.addEventListener('did-navigate-in-page', e => { if (e.isMainFrame) onNavigate(e.url); });
 
           scaleWrap.appendChild(webview);
           frame.appendChild(scaleWrap);
@@ -1210,7 +1206,11 @@
 
       viewEls.forEach((urlViews, ui) => {
         (urlViews || []).forEach((el, si) => {
-          if (el) el.wrap.style.display = (ui === state.activeUrl && si === state.active) ? '' : 'none';
+          if (!el) return;
+          const active = ui === state.activeUrl && si === state.active;
+          el.wrap.style.visibility = active ? 'visible' : 'hidden';
+          el.wrap.style.position = active ? 'relative' : 'absolute';
+          el.wrap.style.pointerEvents = active ? '' : 'none';
         });
       });
 
