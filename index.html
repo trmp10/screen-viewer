@@ -1064,7 +1064,7 @@
         tab.onclick = () => { if (!urlDrag) switchUrl(i); };
         tab.addEventListener('mousedown', e => {
           if (e.button !== 0 || e.target === close) return;
-          urlDrag = { from: i };
+          urlDrag = { from: i, moved: false };
           e.preventDefault();
         });
         tab.dataset.urlIndex = i;
@@ -1083,14 +1083,18 @@
       if (state.activeUrl === urlDrag.from) state.activeUrl = to;
       else if (state.activeUrl === to) state.activeUrl = urlDrag.from;
       urlDrag.from = to;
+      urlDrag.moved = true;
       renderUrlTabs();
     });
 
     document.addEventListener('mouseup', () => {
       if (!urlDrag) return;
+      const moved = urlDrag.moved;
       urlDrag = null;
-      save();
-      renderUrlTabs();
+      if (moved) {
+        save();
+        renderUrlTabs();
+      }
     });
 
     function switchUrl(i) {
