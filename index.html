@@ -807,7 +807,7 @@
     <button class="tab-add" id="addUrlTabBtn" title="Add URL tab">+</button>
   </div>
 
-  <div class="main" id="main"></div>
+  <div class="main" id="main"><div class="empty" id="emptyState" style="display:none;"></div></div>
 
   <div class="fs-hover-zone" id="fsHoverZone"></div>
   <div class="fs-actions" id="fsActions">
@@ -844,7 +844,7 @@
         <label>Text</label>
         <input id="iFieldText" type="text" placeholder="—" />
       </div>
-      <div class="inspect-field" style="margin-bottom:6px;">
+      <div class="inspect-field" style="margin-bottom:6px;margin-top:16px;">
         <label>Font</label>
       </div>
       <div class="inspect-pad-grid" style="margin-bottom:6px;">
@@ -881,7 +881,7 @@
         <label>Opacity</label>
         <input id="iFieldOpacity" type="text" placeholder="1" />
       </div>
-      <div class="inspect-field" style="margin-bottom:6px;margin-top:18px;">
+      <div class="inspect-field" style="margin-bottom:6px;margin-top:26px;">
         <label>Size</label>
       </div>
       <div class="inspect-pad-grid" style="margin-bottom:10px;">
@@ -907,7 +907,7 @@
         <input id="iFieldBoxShadow" type="text" placeholder="none" />
       </div>
       <div id="iSectionPad">
-        <div class="inspect-field" style="margin-bottom:6px;margin-top:18px;">
+        <div class="inspect-field" style="margin-bottom:6px;margin-top:26px;">
           <label>Padding</label>
         </div>
         <div class="inspect-pad-grid">
@@ -930,7 +930,7 @@
         </div>
       </div>
       <div id="iSectionMar">
-        <div class="inspect-field" style="margin-bottom:6px;margin-top:18px;">
+        <div class="inspect-field" style="margin-bottom:6px;margin-top:26px;">
           <label>Margin</label>
         </div>
         <div class="inspect-pad-grid" style="padding-bottom:4px;">
@@ -1154,20 +1154,20 @@
       const activeUrl = state.urls[state.activeUrl];
 
       if (!state.urls.length || !activeUrl) {
-        main.innerHTML = '<div class="empty">Add a URL tab above and enter a URL</div>';
+        $('emptyState').textContent = 'Add a URL tab above and enter a URL';
+        $('emptyState').style.display = '';
         refs = {};
         return;
       }
 
       if (!state.views.length) {
-        main.innerHTML = '<div class="empty">No screens. Click + to add one.</div>';
+        $('emptyState').textContent = 'No screens. Click + to add one.';
+        $('emptyState').style.display = '';
         refs = {};
         return;
       }
 
-      if (main.querySelector('.empty')) {
-        main.innerHTML = '';
-      }
+      $('emptyState').style.display = 'none';
 
       while (viewEls.length < state.urls.length) viewEls.push([]);
 
