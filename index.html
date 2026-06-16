@@ -1153,9 +1153,17 @@
     function renderView() {
       const activeUrl = state.urls[state.activeUrl];
 
+      const hideAllViews = () => viewEls.forEach(urlViews => (urlViews || []).forEach(el => {
+        if (!el) return;
+        el.wrap.style.visibility = 'hidden';
+        el.wrap.style.position = 'absolute';
+        el.wrap.style.pointerEvents = 'none';
+      }));
+
       if (!state.urls.length || !activeUrl) {
         $('emptyState').textContent = 'Add a URL tab above and enter a URL';
         $('emptyState').style.display = '';
+        hideAllViews();
         refs = {};
         return;
       }
@@ -1163,6 +1171,7 @@
       if (!state.views.length) {
         $('emptyState').textContent = 'No screens. Click + to add one.';
         $('emptyState').style.display = '';
+        hideAllViews();
         refs = {};
         return;
       }
