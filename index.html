@@ -1033,6 +1033,16 @@
       localStorage.setItem('sv', JSON.stringify(state));
     }
 
+    function syncUrlIndices() {
+      viewEls.forEach((urlViews, ui) => {
+        (urlViews || []).forEach((el, si) => {
+          if (!el) return;
+          el.urlIndex = ui;
+          el.screenIndex = si;
+        });
+      });
+    }
+
     function urlLabel(url) {
       try { const h = new URL(url).host; return h || url; } catch { return url || 'New tab'; }
     }
@@ -1084,6 +1094,7 @@
       else if (state.activeUrl === to) state.activeUrl = urlDrag.from;
       urlDrag.from = to;
       urlDrag.moved = true;
+      syncUrlIndices();
       renderUrlTabs();
     });
 
@@ -1107,13 +1118,14 @@
 
     function removeUrlTab(i) {
       if (viewEls[i]) {
-        viewEls[i].forEach(el => { if (el) el.wrap.remove(); });
+        viewEls[i].forEach(el => { if (el) el.destroy(); });
         viewEls.splice(i, 1);
       }
       state.urls.splice(i, 1);
       if (state.activeUrl >= state.urls.length) state.activeUrl = Math.max(0, state.urls.length - 1);
       urlInput.value = state.urls[state.activeUrl] || '';
       save();
+      syncUrlIndices();
       render();
     }
 
@@ -1211,20 +1223,31 @@
           webview.style.transform = `scale(${zoom})`;
           webview.style.display = 'inline-flex';
 
+          const el = { wrap, scaleWrap, webview, urlIndex: ui, screenIndex: si };
+
           const onNavigate = (url) => {
-            state.urls[ui] = url;
-            if (ui === state.activeUrl) {
+            const currentUi = el.urlIndex;
+            const currentSi = el.screenIndex;
+            state.urls[currentUi] = url;
+            if (currentUi === state.activeUrl) {
               urlInput.value = url;
               renderUrlTabs();
               updateNavButtons();
             }
-            (viewEls[ui] || []).forEach((el, i) => {
-              if (el && i !== si && el.webview.getURL() !== url) el.webview.loadURL(url);
+            (viewEls[currentUi] || []).forEach((other, i) => {
+              if (other && i !== currentSi && other.webview.getURL() !== url) other.webview.loadURL(url);
             });
             save();
           };
-          webview.addEventListener('did-navigate', e => onNavigate(e.url));
-          webview.addEventListener('did-navigate-in-page', e => { if (e.isMainFrame) onNavigate(e.url); });
+          const didNavigate = e => onNavigate(e.url);
+          const didNavigateInPage = e => { if (e.isMainFrame) onNavigate(e.url); };
+          webview.addEventListener('did-navigate', didNavigate);
+          webview.addEventListener('did-navigate-in-page', didNavigateInPage);
+          el.destroy = () => {
+            webview.removeEventListener('did-navigate', didNavigate);
+            webview.removeEventListener('did-navigate-in-page', didNavigateInPage);
+            wrap.remove();
+          };
 
           scaleWrap.appendChild(webview);
           frame.appendChild(scaleWrap);
@@ -1243,7 +1266,7 @@
           wrap.append(frame);
           main.appendChild(wrap);
 
-          viewEls[ui][si] = { wrap, scaleWrap, webview };
+          viewEls[ui][si] = el;
         });
       });
 
@@ -1272,11 +1295,12 @@
 
     function removeView(i) {
       viewEls.forEach(urlViews => {
-        if (urlViews && urlViews[i]) { urlViews[i].wrap.remove(); urlViews.splice(i, 1); }
+        if (urlViews && urlViews[i]) { urlViews[i].destroy(); urlViews.splice(i, 1); }
       });
       state.views.splice(i, 1);
       if (state.active >= state.views.length) state.active = Math.max(0, state.views.length - 1);
       save();
+      syncUrlIndices();
       render();
     }
 
