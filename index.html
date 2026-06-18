@@ -972,11 +972,16 @@
     <div id="distSection" style="display:none;">
       <div class="inspect-tag" style="display:flex;align-items:center;justify-content:space-between;">
         <span id="distStatusLabel">Click first element</span>
-        <button class="header-icon-btn" id="distResetBtn" style="width:24px;height:24px;display:none;" title="Reset">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.51"/>
-          </svg>
-        </button>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="header-icon-btn" id="distResetBtn" style="width:24px;height:24px;display:none;" title="Reset">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.51"/>
+            </svg>
+          </button>
+          <button class="inspect-toggle" id="distToggle" title="Toggle measurement mode">
+            <span class="inspect-toggle-knob"></span>
+          </button>
+        </div>
       </div>
       <div id="distResult" style="display:none;">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;margin-top:8px;">
@@ -1556,6 +1561,8 @@
     // Inspect
     let inspecting = false;
     let panelCollapsed = false;
+    let inspectPanelOpen = false;
+    let rulerPanelOpen = false;
     let inspectWebview = null;
     let distWebview = null;
     const inspectPanel = $('inspectPanel');
@@ -1643,53 +1650,92 @@
 
     const INJECT_DISTANCE = `(function() {
       if (window.__svDistCleanup) window.__svDistCleanup();
+      const NS = 'http://www.w3.org/2000/svg';
+      const col = '#f39c12';
       const hlA = document.createElement('div');
-      hlA.style.cssText = 'position:fixed;pointer-events:none;border:2px solid #f39c12;background:rgba(243,156,18,0.12);z-index:2147483647;box-sizing:border-box;display:none;';
+      hlA.style.cssText = 'position:fixed;pointer-events:none;border:2px solid '+col+';background:rgba(243,156,18,0.12);z-index:2147483647;box-sizing:border-box;display:none;';
       const hlB = document.createElement('div');
-      hlB.style.cssText = 'position:fixed;pointer-events:none;border:2px solid #f39c12;background:rgba(243,156,18,0.12);z-index:2147483647;box-sizing:border-box;display:none;';
+      hlB.style.cssText = 'position:fixed;pointer-events:none;border:2px solid '+col+';background:rgba(243,156,18,0.12);z-index:2147483647;box-sizing:border-box;display:none;';
       const hlHover = document.createElement('div');
-      hlHover.style.cssText = 'position:fixed;pointer-events:none;border:2px dashed #f39c12;background:rgba(243,156,18,0.05);z-index:2147483646;box-sizing:border-box;display:none;';
+      hlHover.style.cssText = 'position:fixed;pointer-events:none;border:2px dashed '+col+';background:rgba(243,156,18,0.05);z-index:2147483646;box-sizing:border-box;display:none;';
       document.body.appendChild(hlA);
       document.body.appendChild(hlB);
       document.body.appendChild(hlHover);
-      let phase = 0;
-      let rA = null;
-      let tagA = null;
+      let phase = 0, rA = null, tagA = null, measureSvg = null;
       function setRect(el, r) {
-        el.style.top = r.top+'px'; el.style.left = r.left+'px';
-        el.style.width = r.width+'px'; el.style.height = r.height+'px';
-        el.style.display = 'block';
+        el.style.top=r.top+'px'; el.style.left=r.left+'px';
+        el.style.width=r.width+'px'; el.style.height=r.height+'px';
+        el.style.display='block';
+      }
+      function mkEl(tag) { return document.createElementNS(NS, tag); }
+      function attr(el, obj) { Object.keys(obj).forEach(k => el.setAttribute(k, obj[k])); }
+      function drawMeasurements(ra, rb, hGap, vGap) {
+        if (measureSvg) { measureSvg.remove(); measureSvg = null; }
+        if (hGap <= 0 && vGap <= 0) return;
+        measureSvg = mkEl('svg');
+        measureSvg.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:2147483645;overflow:visible;';
+        function addLine(x1, y1, x2, y2, label, horiz) {
+          const g = mkEl('g'); const tk = 5;
+          (horiz ? [x1,x2] : []).forEach(x => { const t=mkEl('line'); attr(t,{x1:x,y1:y1-tk,x2:x,y2:y1+tk,stroke:col,'stroke-width':'1.5'}); g.appendChild(t); });
+          (!horiz ? [y1,y2] : []).forEach(y => { const t=mkEl('line'); attr(t,{x1:x1-tk,y1:y,x2:x1+tk,y2:y,stroke:col,'stroke-width':'1.5'}); g.appendChild(t); });
+          const ln=mkEl('line'); attr(ln,{x1,y1,x2,y2,stroke:col,'stroke-width':'1.5'}); g.appendChild(ln);
+          const mx=(x1+x2)/2, my=(y1+y2)/2, pw=label.length*7+12, ph=18;
+          const bg=mkEl('rect'); attr(bg,{x:mx-pw/2,y:my-ph/2,width:pw,height:ph,rx:4,fill:'#0d0d0d',stroke:col,'stroke-width':'1'}); g.appendChild(bg);
+          const tx=mkEl('text'); attr(tx,{x:mx,y:my+4,'text-anchor':'middle',fill:col,'font-size':'11','font-family':'-apple-system,system-ui,sans-serif','font-weight':'600'}); tx.textContent=label; g.appendChild(tx);
+          measureSvg.appendChild(g);
+        }
+        if (hGap > 0) {
+          const x1=Math.min(ra.right,rb.right), x2=Math.max(ra.left,rb.left);
+          addLine(x1,(ra.top+ra.bottom+rb.top+rb.bottom)/4,x2,(ra.top+ra.bottom+rb.top+rb.bottom)/4,String(hGap),true);
+        }
+        if (vGap > 0) {
+          const y1=Math.min(ra.bottom,rb.bottom), y2=Math.max(ra.top,rb.top);
+          addLine((ra.left+ra.right+rb.left+rb.right)/4,y1,(ra.left+ra.right+rb.left+rb.right)/4,y2,String(vGap),false);
+        }
+        document.body.appendChild(measureSvg);
       }
       function onOver(e) {
         const t = e.target;
-        if (t.tagName === 'BODY' || t.tagName === 'HTML') return;
+        if (t.tagName==='BODY'||t.tagName==='HTML') return;
         setRect(hlHover, t.getBoundingClientRect());
       }
       function onClick(e) {
         e.preventDefault(); e.stopPropagation();
         const t = e.target;
-        if (t.tagName === 'BODY' || t.tagName === 'HTML') return;
+        if (t.tagName==='BODY'||t.tagName==='HTML') return;
         const r = t.getBoundingClientRect();
         if (phase === 0) {
-          rA = r; tagA = t.tagName.toLowerCase();
-          setRect(hlA, r); hlB.style.display = 'none'; hlHover.style.display = 'none';
-          phase = 1;
-          console.log('__svd__' + JSON.stringify({ type: 'dist-a', tag: tagA }));
+          rA=r; tagA=t.tagName.toLowerCase();
+          setRect(hlA,r); hlB.style.display='none';
+          if (measureSvg) { measureSvg.remove(); measureSvg=null; }
+          hlHover.style.display='none'; phase=1;
+          console.log('__svd__'+JSON.stringify({type:'dist-a',tag:tagA}));
         } else {
-          const tagB = t.tagName.toLowerCase();
-          setRect(hlB, r); hlHover.style.display = 'none';
-          const hGap = Math.round(Math.max(rA.left, r.left) - Math.min(rA.right, r.right));
-          const vGap = Math.round(Math.max(rA.top, r.top) - Math.min(rA.bottom, r.bottom));
-          phase = 0; rA = null;
-          console.log('__svd__' + JSON.stringify({ type: 'dist-b', tagA, tagB, hGap, vGap }));
+          const tagB=t.tagName.toLowerCase();
+          setRect(hlB,r); hlHover.style.display='none';
+          const hGap=Math.round(Math.max(rA.left,r.left)-Math.min(rA.right,r.right));
+          const vGap=Math.round(Math.max(rA.top,r.top)-Math.min(rA.bottom,r.bottom));
+          drawMeasurements(rA,r,hGap,vGap);
+          phase=0; rA=null;
+          console.log('__svd__'+JSON.stringify({type:'dist-b',tagA,tagB,hGap,vGap}));
         }
+      }
+      function onContextMenu(e) {
+        e.preventDefault(); e.stopPropagation();
+        phase=0; rA=null;
+        hlA.style.display='none'; hlB.style.display='none'; hlHover.style.display='none';
+        if (measureSvg) { measureSvg.remove(); measureSvg=null; }
+        console.log('__svd__'+JSON.stringify({type:'dist-reset'}));
       }
       document.addEventListener('mouseover', onOver, true);
       document.addEventListener('click', onClick, true);
+      document.addEventListener('contextmenu', onContextMenu, true);
       window.__svDistCleanup = () => {
         document.removeEventListener('mouseover', onOver, true);
         document.removeEventListener('click', onClick, true);
+        document.removeEventListener('contextmenu', onContextMenu, true);
         hlA.remove(); hlB.remove(); hlHover.remove();
+        if (measureSvg) { measureSvg.remove(); measureSvg=null; }
         delete window.__svDistCleanup;
       };
     })()`;
@@ -1713,7 +1759,7 @@
       $('iSectionBorderRadius').style.display = isZero(data.borderRadius) ? 'none' : '';
       const isFlexGrid = ['flex','grid','inline-flex','inline-grid'].includes(data.display || '');
       $('iSectionGap').style.display = (isFlexGrid && !isZero(data.gap)) ? '' : 'none';
-      if (isFlexGrid && !isZero(data.gap)) iFieldGap.value = data.gap;
+      if (isFlexGrid && !isZero(data.gap)) iFieldGap.value = stripPx(data.gap);
       $('iSectionPad').style.display = [data.paddingTop, data.paddingRight, data.paddingBottom, data.paddingLeft].every(isZero) ? 'none' : '';
       $('iSectionMar').style.display = [data.marginTop, data.marginRight, data.marginBottom, data.marginLeft].every(isZero) ? 'none' : '';
       iFieldFontSize.value = stripPx(data.fontSize);
@@ -1737,30 +1783,48 @@
       iFieldMarLeft.value = stripPx(data.marginLeft);
     }
 
-    function toggleInspect() {
-      inspecting = !inspecting;
-      $('inspectBtn').classList.toggle('active', inspecting);
-      $('fsInspectBtn').classList.toggle('active', inspecting);
-      if (inspecting) {
-        inspectPanel.classList.add('visible');
-        inspectToggle.classList.add('on');
-        if (refs.webview) {
-          refs.webview.executeJavaScript(INJECT_INSPECTOR);
-          refs.webview.addEventListener('console-message', onConsoleMessage);
-          inspectWebview = refs.webview;
-        }
-      } else {
+    function turnOnInspect() {
+      inspecting = true;
+      inspectToggle.classList.add('on');
+      $('fsInspectBtn').classList.add('active');
+      if (refs.webview) {
+        refs.webview.executeJavaScript(INJECT_INSPECTOR).catch(() => {});
+        refs.webview.addEventListener('console-message', onConsoleMessage);
+        inspectWebview = refs.webview;
+      }
+    }
+
+    function turnOffInspect() {
+      inspecting = false;
+      inspectToggle.classList.remove('on');
+      $('fsInspectBtn').classList.remove('active');
+      inspectTagLabel.textContent = 'Click an element';
+      if (inspectWebview) {
+        inspectWebview.executeJavaScript(CLEANUP_INSPECTOR).catch(() => {});
+        inspectWebview.removeEventListener('console-message', onConsoleMessage);
+        inspectWebview = null;
+      }
+    }
+
+    function toggleInspectOverlay() {
+      if (inspecting) turnOffInspect(); else turnOnInspect();
+    }
+
+    function toggleInspectPanel() {
+      if (inspectPanelOpen) {
+        if (inspecting) turnOffInspect();
+        inspectPanelOpen = false;
+        $('inspectBtn').classList.remove('active');
         inspectPanel.classList.remove('visible');
         inspectPanel.classList.remove('panel-collapsed');
         panelCollapsed = false;
         inspectCollapseIcon.style.transform = '';
-        inspectTagLabel.textContent = 'Click an element';
-        inspectToggle.classList.remove('on');
-        if (inspectWebview) {
-          inspectWebview.executeJavaScript(CLEANUP_INSPECTOR);
-          inspectWebview.removeEventListener('console-message', onConsoleMessage);
-          inspectWebview = null;
-        }
+      } else {
+        if (rulerPanelOpen) toggleRulerPanel();
+        inspectPanelOpen = true;
+        $('inspectBtn').classList.add('active');
+        inspectPanel.classList.add('visible');
+        if (!inspecting) turnOnInspect();
       }
     }
 
@@ -1777,51 +1841,72 @@
         $('distResetBtn').style.display = '';
       } else if (data.type === 'dist-b') {
         $('distStatusLabel').textContent = 'Click first element';
-        $('distTagB').textContent = '<' + data.tag + '>';
-        const fmt = v => v >= 0 ? v + 'px' : Math.abs(v) + 'px (overlap)';
+        $('distTagB').textContent = '<' + data.tagB + '>';
+        const fmt = v => v >= 0 ? String(v) : Math.abs(v) + ' (overlap)';
         $('iFieldDistH').value = fmt(data.hGap);
         $('iFieldDistV').value = fmt(data.vGap);
         $('distResult').style.display = '';
         $('distResetBtn').style.display = '';
+      } else if (data.type === 'dist-reset') {
+        $('distStatusLabel').textContent = 'Click first element';
+        $('distResult').style.display = 'none';
+        $('distResetBtn').style.display = 'none';
       }
     }
 
+    function turnOnDist() {
+      measuringDist = true;
+      distToggle.classList.add('on');
+      if (refs.webview) {
+        refs.webview.executeJavaScript(INJECT_DISTANCE).catch(() => {});
+        refs.webview.addEventListener('console-message', onDistMessage);
+        distWebview = refs.webview;
+      }
+    }
+
+    function turnOffDist() {
+      measuringDist = false;
+      distToggle.classList.remove('on');
+      if (distWebview) {
+        distWebview.executeJavaScript(CLEANUP_DISTANCE).catch(() => {});
+        distWebview.removeEventListener('console-message', onDistMessage);
+        distWebview = null;
+      }
+    }
+
+    function toggleDistOverlay() {
+      if (measuringDist) turnOffDist(); else turnOnDist();
+    }
+
     function resetDist() {
+      if (measuringDist) turnOffDist();
       $('distStatusLabel').textContent = 'Click first element';
       $('distResult').style.display = 'none';
       $('distResetBtn').style.display = 'none';
-      if (refs.webview) refs.webview.executeJavaScript(INJECT_DISTANCE);
+      turnOnDist();
     }
 
-    function toggleRuler() {
-      if (measuringDist) {
-        measuringDist = false;
+    function toggleRulerPanel() {
+      if (rulerPanelOpen) {
+        if (measuringDist) turnOffDist();
+        rulerPanelOpen = false;
         $('rulerBtn').classList.remove('active');
         $('distSection').style.display = 'none';
         $('inspectTag').style.display = 'flex';
         $('inspectFields').style.display = '';
-        if (!inspecting) inspectPanel.classList.remove('visible');
-        if (distWebview) {
-          distWebview.executeJavaScript(CLEANUP_DISTANCE);
-          distWebview.removeEventListener('console-message', onDistMessage);
-          distWebview = null;
-        }
+        if (!inspectPanelOpen) inspectPanel.classList.remove('visible');
       } else {
-        if (inspecting) toggleInspect();
-        measuringDist = true;
-        $('distStatusLabel').textContent = 'Click first element';
-        $('distResult').style.display = 'none';
-        $('distResetBtn').style.display = 'none';
+        if (inspectPanelOpen) toggleInspectPanel();
+        rulerPanelOpen = true;
         $('rulerBtn').classList.add('active');
         $('inspectTag').style.display = 'none';
         $('inspectFields').style.display = 'none';
         $('distSection').style.display = '';
+        $('distStatusLabel').textContent = 'Click first element';
+        $('distResult').style.display = 'none';
+        $('distResetBtn').style.display = 'none';
         inspectPanel.classList.add('visible');
-        if (refs.webview) {
-          refs.webview.executeJavaScript(INJECT_DISTANCE);
-          refs.webview.addEventListener('console-message', onDistMessage);
-          distWebview = refs.webview;
-        }
+        if (!measuringDist) turnOnDist();
       }
     }
 
@@ -1866,19 +1951,14 @@
     iFieldMarLeft.addEventListener('input', () => applyProp('margin-left', normDim(iFieldMarLeft.value.trim())));
     iFieldGap.addEventListener('input', () => applyProp('gap', normDim(iFieldGap.value.trim())));
 
-    $('inspectBtn').onclick = toggleInspect;
-    $('rulerBtn').onclick = toggleRuler;
+    $('inspectBtn').onclick = toggleInspectPanel;
+    $('rulerBtn').onclick = toggleRulerPanel;
     $('distResetBtn').onclick = resetDist;
 
     const inspectToggle = $('inspectToggle');
-    inspectToggle.onclick = () => {
-      const active = inspectToggle.classList.toggle('on');
-      if (active) {
-        if (refs.webview) refs.webview.executeJavaScript(INJECT_INSPECTOR);
-      } else {
-        if (refs.webview) refs.webview.executeJavaScript(CLEANUP_INSPECTOR);
-      }
-    };
+    const distToggle = $('distToggle');
+    inspectToggle.onclick = toggleInspectOverlay;
+    distToggle.onclick = toggleDistOverlay;
 
     $('screenshotBtn').onclick = () => {
       if (!refs.webview || !state.urls[state.activeUrl]) return;
@@ -1897,7 +1977,7 @@
     fsActions.addEventListener('mouseenter', () => fsActions.classList.add('fs-visible'));
     fsActions.addEventListener('mouseleave', () => fsActions.classList.remove('fs-visible'));
 
-    $('fsInspectBtn').onclick = toggleInspect;
+    $('fsInspectBtn').onclick = toggleInspectOverlay;
 
     const titleWrap = $('titleWrap');
     $('titleCaretBtn').onclick = e => { e.stopPropagation(); titleWrap.classList.toggle('open'); };
