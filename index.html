@@ -1322,9 +1322,21 @@
           const didNavigateInPage = e => { if (e.isMainFrame) onNavigate(e.url); };
           webview.addEventListener('did-navigate', didNavigate);
           webview.addEventListener('did-navigate-in-page', didNavigateInPage);
+          const onFinishLoad = () => {
+            if (inspecting && inspectWebview === webview) {
+              webview.executeJavaScript(INJECT_INSPECTOR).catch(() => {});
+              if (!inspectToggle.classList.contains('on')) webview.executeJavaScript('if(window.__svInspectSetEnabled)window.__svInspectSetEnabled(false)').catch(() => {});
+            }
+            if (measuringDist && distWebview === webview) {
+              webview.executeJavaScript(INJECT_DISTANCE).catch(() => {});
+              if (!distToggle.classList.contains('on')) webview.executeJavaScript('if(window.__svDistSetEnabled)window.__svDistSetEnabled(false)').catch(() => {});
+            }
+          };
+          webview.addEventListener('did-finish-load', onFinishLoad);
           el.destroy = () => {
             webview.removeEventListener('did-navigate', didNavigate);
             webview.removeEventListener('did-navigate-in-page', didNavigateInPage);
+            webview.removeEventListener('did-finish-load', onFinishLoad);
             webview.src = 'about:blank';
             wrap.remove();
           };
@@ -1835,13 +1847,26 @@
             const outer=aInB?r:rA, inner=aInB?rA:r;
             const outerEl=aInB?t:elA;
             window.__svDistTarget=outerEl;
+            window.__svDistTargetOrigStyle=outerEl.style.cssText;
+            const csOut=window.getComputedStyle(outerEl);
             const dims=drawContainment(outer,inner);
+            window.__svDistBasePL=parseFloat(csOut.paddingLeft)||0;
+            window.__svDistBasePR=parseFloat(csOut.paddingRight)||0;
+            window.__svDistBasePT=parseFloat(csOut.paddingTop)||0;
+            window.__svDistBasePB=parseFloat(csOut.paddingBottom)||0;
+            window.__svDistBaseL=dims.l;window.__svDistBaseR=dims.r;
+            window.__svDistBaseT=dims.t;window.__svDistBaseB=dims.b;
             console.log('__svd__'+JSON.stringify({type:'dist-contain',tagOuter:aInB?tagB:tagA,tagInner:aInB?tagA:tagB,...dims}));
           } else {
             distMode='gap';
             window.__svDistTarget=t;
+            window.__svDistTargetOrigStyle=t.style.cssText;
+            const csB=window.getComputedStyle(t);
             const hGap=Math.round(Math.max(rA.left,r.left)-Math.min(rA.right,r.right));
             const vGap=Math.round(Math.max(rA.top,r.top)-Math.min(rA.bottom,r.bottom));
+            window.__svDistBaseMT=parseFloat(csB.marginTop)||0;
+            window.__svDistBaseML=parseFloat(csB.marginLeft)||0;
+            window.__svDistBaseGapH=hGap;window.__svDistBaseGapV=vGap;
             drawMeasurements(rA,r,hGap,vGap);
             console.log('__svd__'+JSON.stringify({type:'dist-b',tagA,tagB,hGap,vGap}));
           }
@@ -1889,15 +1914,70 @@
           const aInB = ra.left>=rb.left&&ra.right<=rb.right&&ra.top>=rb.top&&ra.bottom<=rb.bottom;
           const outer = aInB?rb:ra, inner = aInB?ra:rb;
           window.__svDistTarget = aInB ? elB : elA;
+          window.__svDistTargetOrigStyle = window.__svDistTarget.style.cssText;
+          const csOut = window.getComputedStyle(window.__svDistTarget);
           const dims = drawContainment(outer, inner);
+          window.__svDistBasePL=parseFloat(csOut.paddingLeft)||0;
+          window.__svDistBasePR=parseFloat(csOut.paddingRight)||0;
+          window.__svDistBasePT=parseFloat(csOut.paddingTop)||0;
+          window.__svDistBasePB=parseFloat(csOut.paddingBottom)||0;
+          window.__svDistBaseL=dims.l;window.__svDistBaseR=dims.r;
+          window.__svDistBaseT=dims.t;window.__svDistBaseB=dims.b;
           console.log('__svd__'+JSON.stringify({type:'dist-contain',tagOuter:aInB?tagB:tagA,tagInner:aInB?tagA:tagB,...dims}));
         } else {
           distMode = 'gap';
           window.__svDistTarget = elB;
+          window.__svDistTargetOrigStyle = elB.style.cssText;
+          const csB = window.getComputedStyle(elB);
           const hGap = Math.round(Math.max(ra.left,rb.left)-Math.min(ra.right,rb.right));
           const vGap = Math.round(Math.max(ra.top,rb.top)-Math.min(ra.bottom,rb.bottom));
+          window.__svDistBaseMT=parseFloat(csB.marginTop)||0;
+          window.__svDistBaseML=parseFloat(csB.marginLeft)||0;
+          window.__svDistBaseGapH=hGap;window.__svDistBaseGapV=vGap;
           drawMeasurements(ra, rb, hGap, vGap);
           console.log('__svd__'+JSON.stringify({type:'dist-b',tagA,tagB,hGap,vGap}));
+        }
+      };
+      window.__svDistResetTarget = () => {
+        if (!window.__svDistTarget || window.__svDistTargetOrigStyle === undefined) return;
+        window.__svDistTarget.style.cssText = window.__svDistTargetOrigStyle;
+        if (!elA || !elB) return;
+        const ra = elA.getBoundingClientRect(), rb = elB.getBoundingClientRect();
+        const tA = elA.tagName.toLowerCase(), tB = elB.tagName.toLowerCase();
+        if (distMode === 'contain') {
+          const aInB = ra.left>=rb.left&&ra.right<=rb.right&&ra.top>=rb.top&&ra.bottom<=rb.bottom;
+          const dims = drawContainment(aInB?rb:ra, aInB?ra:rb);
+          console.log('__svd__'+JSON.stringify({type:'dist-contain',tagOuter:aInB?tB:tA,tagInner:aInB?tA:tB,...dims}));
+        } else {
+          const hG=Math.round(Math.max(ra.left,rb.left)-Math.min(ra.right,rb.right));
+          const vG=Math.round(Math.max(ra.top,rb.top)-Math.min(ra.bottom,rb.bottom));
+          drawMeasurements(ra,rb,hG,vG);
+          console.log('__svd__'+JSON.stringify({type:'dist-b',tagA:tA,tagB:tB,hGap:hG,vGap:vG}));
+        }
+      };
+      window.__svDistApply = (dim, desired) => {
+        if (!window.__svDistTarget) return;
+        const n = parseFloat(desired);
+        if (isNaN(n)) return;
+        if (distMode === 'gap') {
+          if (dim === 'V') {
+            const v = (window.__svDistBaseMT||0) + (n - (window.__svDistBaseGapV||0));
+            window.__svDistTarget.style.setProperty('margin-top', v+'px', 'important');
+          } else if (dim === 'H') {
+            const v = (window.__svDistBaseML||0) + (n - (window.__svDistBaseGapH||0));
+            window.__svDistTarget.style.setProperty('margin-left', v+'px', 'important');
+          }
+        } else {
+          const map = {
+            L:['padding-left',window.__svDistBasePL||0,window.__svDistBaseL||0],
+            R:['padding-right',window.__svDistBasePR||0,window.__svDistBaseR||0],
+            T:['padding-top',window.__svDistBasePT||0,window.__svDistBaseT||0],
+            B:['padding-bottom',window.__svDistBasePB||0,window.__svDistBaseB||0],
+          };
+          const entry = map[dim];
+          if (!entry) return;
+          const newV = entry[1] + (n - entry[2]);
+          window.__svDistTarget.style.setProperty(entry[0], newV+'px', 'important');
         }
       };
       window.__svDistSetEnabled = (on) => {
@@ -1915,10 +1995,12 @@
         document.removeEventListener('scroll', onScrollDist, true);
         hlA.remove(); hlB.remove(); hlHover.remove();
         if (measureSvg) { measureSvg.remove(); measureSvg=null; }
-        delete window.__svDistCleanup;
-        delete window.__svDistSetEnabled;
-        delete window.__svDistTraverseB;
-        delete window.__svDistTarget;
+        ['__svDistCleanup','__svDistSetEnabled','__svDistTraverseB','__svDistTarget',
+         '__svDistTargetOrigStyle','__svDistResetTarget','__svDistApply',
+         '__svDistBaseMT','__svDistBaseML','__svDistBaseGapH','__svDistBaseGapV',
+         '__svDistBasePL','__svDistBasePR','__svDistBasePT','__svDistBasePB',
+         '__svDistBaseL','__svDistBaseR','__svDistBaseT','__svDistBaseB',
+        ].forEach(k => delete window[k]);
       };
     })()`;
 
@@ -2036,11 +2118,11 @@
 
     let measuringDist = false;
 
-    function applyDistProp(prop, rawVal) {
+    function applyDistProp(dim, rawVal) {
       if (!distWebview || !rawVal) return;
       const n = parseInt(rawVal, 10);
       if (isNaN(n)) return;
-      distWebview.executeJavaScript('if(window.__svDistTarget)window.__svDistTarget.style.setProperty(' + JSON.stringify(prop) + ',' + JSON.stringify(n + 'px') + ",'important')").catch(() => {});
+      distWebview.executeJavaScript('if(window.__svDistApply)window.__svDistApply(' + JSON.stringify(dim) + ',' + n + ')').catch(() => {});
     }
 
     function onDistMessage(e) {
@@ -2088,12 +2170,12 @@
       }
     }
 
-    $('iFieldDistH').addEventListener('input', () => applyDistProp('margin-left', $('iFieldDistH').value.trim()));
-    $('iFieldDistV').addEventListener('input', () => applyDistProp('margin-top', $('iFieldDistV').value.trim()));
-    $('iFieldDistL').addEventListener('input', () => applyDistProp('padding-left', $('iFieldDistL').value.trim()));
-    $('iFieldDistR').addEventListener('input', () => applyDistProp('padding-right', $('iFieldDistR').value.trim()));
-    $('iFieldDistT').addEventListener('input', () => applyDistProp('padding-top', $('iFieldDistT').value.trim()));
-    $('iFieldDistB').addEventListener('input', () => applyDistProp('padding-bottom', $('iFieldDistB').value.trim()));
+    $('iFieldDistH').addEventListener('input', () => applyDistProp('H', $('iFieldDistH').value.trim()));
+    $('iFieldDistV').addEventListener('input', () => applyDistProp('V', $('iFieldDistV').value.trim()));
+    $('iFieldDistL').addEventListener('input', () => applyDistProp('L', $('iFieldDistL').value.trim()));
+    $('iFieldDistR').addEventListener('input', () => applyDistProp('R', $('iFieldDistR').value.trim()));
+    $('iFieldDistT').addEventListener('input', () => applyDistProp('T', $('iFieldDistT').value.trim()));
+    $('iFieldDistB').addEventListener('input', () => applyDistProp('B', $('iFieldDistB').value.trim()));
 
     function turnOnDist() {
       measuringDist = true;
@@ -2212,7 +2294,7 @@
 
     $('inspectBtn').onclick = toggleInspectPanel;
     $('rulerBtn').onclick = toggleRulerPanel;
-    $('distResetBtn').onclick = resetDist;
+    $('distResetBtn').onclick = () => { if (distWebview) distWebview.executeJavaScript('if(window.__svDistResetTarget)window.__svDistResetTarget()').catch(() => {}); };
     $('inspectParentBtn').onclick = () => { if (inspectWebview) inspectWebview.executeJavaScript('if(window.__svSelectParent)window.__svSelectParent()').catch(() => {}); };
     $('inspectChildBtn').onclick = () => { if (inspectWebview) inspectWebview.executeJavaScript('if(window.__svSelectChild)window.__svSelectChild()').catch(() => {}); };
     $('inspectResetBtn').onclick = () => { if (inspectWebview) inspectWebview.executeJavaScript('if(window.__svResetEl)window.__svResetEl()').catch(() => {}); };
