@@ -856,7 +856,30 @@
         <label>Text</label>
         <input id="iFieldText" type="text" placeholder="—" />
       </div>
-      <div class="inspect-field" style="margin-bottom:6px;margin-top:16px;">
+      <div id="iSectionPad">
+        <div class="inspect-field" style="margin-bottom:6px;margin-top:16px;">
+          <label>Padding</label>
+        </div>
+        <div class="inspect-pad-grid">
+          <div class="inspect-field">
+            <label>Left</label>
+            <input id="iFieldPadLeft" type="text" placeholder="0" />
+          </div>
+          <div class="inspect-field">
+            <label>Right</label>
+            <input id="iFieldPadRight" type="text" placeholder="0" />
+          </div>
+          <div class="inspect-field">
+            <label>Top</label>
+            <input id="iFieldPadTop" type="text" placeholder="0" />
+          </div>
+          <div class="inspect-field">
+            <label>Bottom</label>
+            <input id="iFieldPadBottom" type="text" placeholder="0" />
+          </div>
+        </div>
+      </div>
+      <div class="inspect-field" style="margin-bottom:6px;margin-top:26px;">
         <label>Font</label>
       </div>
       <div class="inspect-pad-grid" style="margin-bottom:6px;">
@@ -921,29 +944,6 @@
       <div class="inspect-field" style="display:none;">
         <label>Box shadow</label>
         <input id="iFieldBoxShadow" type="text" placeholder="none" />
-      </div>
-      <div id="iSectionPad">
-        <div class="inspect-field" style="margin-bottom:6px;margin-top:26px;">
-          <label>Padding</label>
-        </div>
-        <div class="inspect-pad-grid">
-          <div class="inspect-field">
-            <label>Left</label>
-            <input id="iFieldPadLeft" type="text" placeholder="0" />
-          </div>
-          <div class="inspect-field">
-            <label>Right</label>
-            <input id="iFieldPadRight" type="text" placeholder="0" />
-          </div>
-          <div class="inspect-field">
-            <label>Top</label>
-            <input id="iFieldPadTop" type="text" placeholder="0" />
-          </div>
-          <div class="inspect-field">
-            <label>Bottom</label>
-            <input id="iFieldPadBottom" type="text" placeholder="0" />
-          </div>
-        </div>
       </div>
       <div id="iSectionMar">
         <div class="inspect-field" style="margin-bottom:6px;margin-top:26px;">
@@ -1640,8 +1640,23 @@
         };
         console.log('__sv__' + JSON.stringify(data));
       }
+      function onScroll() {
+        if (locked && window.__svLastEl) {
+          const r = window.__svLastEl.getBoundingClientRect();
+          hl.style.top=r.top+'px'; hl.style.left=r.left+'px';
+          hl.style.width=r.width+'px'; hl.style.height=r.height+'px';
+        }
+      }
+      function onContextMenu(e) {
+        e.preventDefault(); e.stopPropagation();
+        locked = false; window.__svLastEl = null;
+        hl.style.display = 'none';
+        console.log('__sv__' + JSON.stringify({ type: 'inspect-reset' }));
+      }
       document.addEventListener('mouseover', onOver, true);
       document.addEventListener('click', onClick, true);
+      document.addEventListener('scroll', onScroll, true);
+      document.addEventListener('contextmenu', onContextMenu, true);
       window.__svInspectSetEnabled = (on) => {
         enabled = on;
         if (!on) { hl.style.display = 'none'; }
@@ -1657,6 +1672,8 @@
       window.__svInspectCleanup = () => {
         document.removeEventListener('mouseover', onOver, true);
         document.removeEventListener('click', onClick, true);
+        document.removeEventListener('scroll', onScroll, true);
+        document.removeEventListener('contextmenu', onContextMenu, true);
         hl.remove();
         delete window.__svInspectCleanup;
         delete window.__svInspectSetEnabled;
@@ -1678,7 +1695,7 @@
       document.body.appendChild(hlA);
       document.body.appendChild(hlB);
       document.body.appendChild(hlHover);
-      let phase = 0, rA = null, tagA = null, measureSvg = null, distEnabled = true;
+      let phase = 0, rA = null, tagA = null, measureSvg = null, distEnabled = true, elA = null, elB = null;
       function setRect(el, r) {
         el.style.top=r.top+'px'; el.style.left=r.left+'px';
         el.style.width=r.width+'px'; el.style.height=r.height+'px';
@@ -1724,13 +1741,13 @@
         if (t.tagName==='BODY'||t.tagName==='HTML') return;
         const r = t.getBoundingClientRect();
         if (phase === 0) {
-          rA=r; tagA=t.tagName.toLowerCase();
+          rA=r; tagA=t.tagName.toLowerCase(); elA=t; elB=null;
           setRect(hlA,r); hlB.style.display='none';
           if (measureSvg) { measureSvg.remove(); measureSvg=null; }
           hlHover.style.display='none'; phase=1;
           console.log('__svd__'+JSON.stringify({type:'dist-a',tag:tagA}));
         } else {
-          const tagB=t.tagName.toLowerCase();
+          const tagB=t.tagName.toLowerCase(); elB=t;
           setRect(hlB,r); hlHover.style.display='none';
           const hGap=Math.round(Math.max(rA.left,r.left)-Math.min(rA.right,r.right));
           const vGap=Math.round(Math.max(rA.top,r.top)-Math.min(rA.bottom,r.bottom));
@@ -1742,14 +1759,26 @@
       function onContextMenu(e) {
         if (!distEnabled) return;
         e.preventDefault(); e.stopPropagation();
-        phase=0; rA=null;
+        phase=0; rA=null; elA=null; elB=null;
         hlA.style.display='none'; hlB.style.display='none'; hlHover.style.display='none';
         if (measureSvg) { measureSvg.remove(); measureSvg=null; }
         console.log('__svd__'+JSON.stringify({type:'dist-reset'}));
       }
+      function onScrollDist() {
+        if (!distEnabled) return;
+        if (elA && hlA.style.display==='block') setRect(hlA, elA.getBoundingClientRect());
+        if (elB && hlB.style.display==='block') {
+          setRect(hlB, elB.getBoundingClientRect());
+          const ra=elA.getBoundingClientRect(), rb=elB.getBoundingClientRect();
+          const hG=Math.round(Math.max(ra.left,rb.left)-Math.min(ra.right,rb.right));
+          const vG=Math.round(Math.max(ra.top,rb.top)-Math.min(ra.bottom,rb.bottom));
+          drawMeasurements(ra,rb,hG,vG);
+        }
+      }
       document.addEventListener('mouseover', onOver, true);
       document.addEventListener('click', onClick, true);
       document.addEventListener('contextmenu', onContextMenu, true);
+      document.addEventListener('scroll', onScrollDist, true);
       window.__svDistSetEnabled = (on) => {
         distEnabled = on;
         const vis = on ? '' : 'hidden';
@@ -1762,6 +1791,7 @@
         document.removeEventListener('mouseover', onOver, true);
         document.removeEventListener('click', onClick, true);
         document.removeEventListener('contextmenu', onContextMenu, true);
+        document.removeEventListener('scroll', onScrollDist, true);
         hlA.remove(); hlB.remove(); hlHover.remove();
         if (measureSvg) { measureSvg.remove(); measureSvg=null; }
         delete window.__svDistCleanup;
@@ -1775,6 +1805,7 @@
       if (!e.message.startsWith('__sv__')) return;
       let data;
       try { data = JSON.parse(e.message.slice(6)); } catch { return; }
+      if (data.type === 'inspect-reset') { inspectTagLabel.textContent = 'Click an element'; return; }
       if (data.type !== 'inspect') return;
       const CONTAINER_TAGS = new Set(['div','section','article','main','nav','header','footer','aside','ul','ol','li','form','table','tbody','tr','td','th']);
       const isContainer = CONTAINER_TAGS.has(data.tag) || data.text.length > 50;
@@ -1885,7 +1916,7 @@
       } else if (data.type === 'dist-b') {
         $('distStatusLabel').textContent = 'Click first element';
         $('distTagB').textContent = '<' + data.tagB + '>';
-        const fmt = v => String(v);
+        const fmt = v => v > 0 ? String(v) : '—';
         $('iFieldDistH').value = fmt(data.hGap);
         $('iFieldDistV').value = fmt(data.vGap);
         $('distResult').style.display = '';
@@ -1977,13 +2008,13 @@
     }
 
     function applyProp(prop, value) {
-      if (!refs.webview || !value) return;
-      refs.webview.executeJavaScript(`if (window.__svLastEl) window.__svLastEl.style.setProperty(${JSON.stringify(prop)}, ${JSON.stringify(value)}, 'important')`);
+      if (!inspectWebview || !value) return;
+      inspectWebview.executeJavaScript(`if (window.__svLastEl) window.__svLastEl.style.setProperty(${JSON.stringify(prop)}, ${JSON.stringify(value)}, 'important')`);
     }
 
     iFieldText.addEventListener('input', () => {
-      if (!refs.webview) return;
-      refs.webview.executeJavaScript(`if (window.__svLastEl) window.__svLastEl.innerText = ${JSON.stringify(iFieldText.value)}`);
+      if (!inspectWebview) return;
+      inspectWebview.executeJavaScript(`if (window.__svLastEl) window.__svLastEl.innerText = ${JSON.stringify(iFieldText.value)}`);
     });
     iFieldFontSize.addEventListener('input', () => applyProp('font-size', normDim(iFieldFontSize.value.trim())));
     iFieldFontWeight.addEventListener('input', () => applyProp('font-weight', iFieldFontWeight.value.trim()));
