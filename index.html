@@ -836,6 +836,12 @@
         <line x1="15" y1="6" x2="9" y2="18"/>
       </svg>
     </button>
+    <button class="header-icon-btn" id="fsRulerBtn" title="Measure distance">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="7" width="20" height="10" rx="1"/>
+        <path d="M7 7v4M12 7v6M17 7v4"/>
+      </svg>
+    </button>
   </div>
 
   <div class="inspect-panel" id="inspectPanel">
@@ -851,7 +857,10 @@
         <button class="header-icon-btn" id="inspectParentBtn" style="width:22px;height:22px;display:none;" title="Select parent">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
         </button>
-        <button class="header-icon-btn" id="inspectResetBtn" style="width:22px;height:22px;display:none;" title="Reset changes">
+        <button class="header-icon-btn" id="inspectChildBtn" style="width:22px;height:22px;display:none;" title="Select child">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button class="header-icon-btn" id="inspectResetBtn" style="width:22px;height:22px;display:none;" title="Undo edits">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.51"/></svg>
         </button>
         <button class="inspect-toggle" id="inspectToggle" title="Toggle inspect mode">
@@ -981,6 +990,12 @@
       <div class="inspect-tag" style="display:flex;align-items:center;justify-content:space-between;">
         <span id="distStatusLabel">Click first element</span>
         <div style="display:flex;align-items:center;gap:6px;">
+          <button class="header-icon-btn" id="distParentBtn" style="width:22px;height:22px;display:none;" title="Parent of element B">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+          <button class="header-icon-btn" id="distChildBtn" style="width:22px;height:22px;display:none;" title="Child of element B">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
           <button class="header-icon-btn" id="distResetBtn" style="width:24px;height:24px;display:none;" title="Reset">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.51"/>
@@ -1669,6 +1684,7 @@
         }
       }
       function onContextMenu(e) {
+        if (!enabled) return;
         e.preventDefault(); e.stopPropagation();
         locked = false; window.__svLastEl = null;
         hl.style.width='0'; hl.style.height='0';
@@ -1685,6 +1701,14 @@
         window.__svLastEl = p;
         window.__svOrigStyle = p.style.cssText;
         sendInspect(p);
+      };
+      window.__svSelectChild = () => {
+        if (!window.__svLastEl) return;
+        const c = window.__svLastEl.firstElementChild;
+        if (!c || c.tagName === 'BODY' || c.tagName === 'HTML') return;
+        window.__svLastEl = c;
+        window.__svOrigStyle = c.style.cssText;
+        sendInspect(c);
       };
       document.addEventListener('mouseover', onOver, true);
       document.addEventListener('click', onClick, true);
@@ -1712,6 +1736,7 @@
         delete window.__svInspectSetEnabled;
         delete window.__svResetEl;
         delete window.__svSelectParent;
+        delete window.__svSelectChild;
         delete window.__svOrigStyle;
       };
     })()`;
@@ -1851,6 +1876,30 @@
       document.addEventListener('click', onClick, true);
       document.addEventListener('contextmenu', onContextMenu, true);
       document.addEventListener('scroll', onScrollDist, true);
+      window.__svDistTraverseB = (dir) => {
+        if (!elA || !elB) return;
+        const next = dir === 'up' ? elB.parentElement : elB.firstElementChild;
+        if (!next || next.tagName === 'BODY' || next.tagName === 'HTML') return;
+        elB = next;
+        const ra = elA.getBoundingClientRect(), rb = elB.getBoundingClientRect();
+        setRect(hlB, rb);
+        const tagA = elA.tagName.toLowerCase(), tagB = elB.tagName.toLowerCase();
+        if (isContained(ra, rb)) {
+          distMode = 'contain';
+          const aInB = ra.left>=rb.left&&ra.right<=rb.right&&ra.top>=rb.top&&ra.bottom<=rb.bottom;
+          const outer = aInB?rb:ra, inner = aInB?ra:rb;
+          window.__svDistTarget = aInB ? elB : elA;
+          const dims = drawContainment(outer, inner);
+          console.log('__svd__'+JSON.stringify({type:'dist-contain',tagOuter:aInB?tagB:tagA,tagInner:aInB?tagA:tagB,...dims}));
+        } else {
+          distMode = 'gap';
+          window.__svDistTarget = elB;
+          const hGap = Math.round(Math.max(ra.left,rb.left)-Math.min(ra.right,rb.right));
+          const vGap = Math.round(Math.max(ra.top,rb.top)-Math.min(ra.bottom,rb.bottom));
+          drawMeasurements(ra, rb, hGap, vGap);
+          console.log('__svd__'+JSON.stringify({type:'dist-b',tagA,tagB,hGap,vGap}));
+        }
+      };
       window.__svDistSetEnabled = (on) => {
         distEnabled = on;
         const vis = on ? '' : 'hidden';
@@ -1868,6 +1917,8 @@
         if (measureSvg) { measureSvg.remove(); measureSvg=null; }
         delete window.__svDistCleanup;
         delete window.__svDistSetEnabled;
+        delete window.__svDistTraverseB;
+        delete window.__svDistTarget;
       };
     })()`;
 
@@ -1880,11 +1931,13 @@
       if (data.type === 'inspect-reset') {
         inspectTagLabel.textContent = 'Click an element';
         $('inspectParentBtn').style.display = 'none';
+        $('inspectChildBtn').style.display = 'none';
         $('inspectResetBtn').style.display = 'none';
         return;
       }
       if (data.type !== 'inspect') return;
       $('inspectParentBtn').style.display = '';
+      $('inspectChildBtn').style.display = '';
       $('inspectResetBtn').style.display = '';
       const CONTAINER_TAGS = new Set(['div','section','article','main','nav','header','footer','aside','ul','ol','li','form','table','tbody','tr','td','th']);
       const isContainer = CONTAINER_TAGS.has(data.tag) || data.text.length > 50;
@@ -2010,6 +2063,8 @@
         $('distContainFields').style.display = 'none';
         $('distResult').style.display = '';
         $('distResetBtn').style.display = '';
+        $('distParentBtn').style.display = '';
+        $('distChildBtn').style.display = '';
       } else if (data.type === 'dist-contain') {
         $('distStatusLabel').textContent = 'Click first element';
         $('distTagA').textContent = '<' + data.tagOuter + '>';
@@ -2022,10 +2077,14 @@
         $('distContainFields').style.display = '';
         $('distResult').style.display = '';
         $('distResetBtn').style.display = '';
+        $('distParentBtn').style.display = '';
+        $('distChildBtn').style.display = '';
       } else if (data.type === 'dist-reset') {
         $('distStatusLabel').textContent = 'Click first element';
         $('distResult').style.display = 'none';
         $('distResetBtn').style.display = 'none';
+        $('distParentBtn').style.display = 'none';
+        $('distChildBtn').style.display = 'none';
       }
     }
 
@@ -2077,6 +2136,10 @@
       $('distStatusLabel').textContent = 'Click first element';
       $('distResult').style.display = 'none';
       $('distResetBtn').style.display = 'none';
+      $('distParentBtn').style.display = 'none';
+      $('distChildBtn').style.display = 'none';
+      $('distGapFields').style.display = '';
+      $('distContainFields').style.display = 'none';
       turnOnDist();
     }
 
@@ -2085,6 +2148,7 @@
         if (measuringDist) turnOffDist();
         rulerPanelOpen = false;
         $('rulerBtn').classList.remove('active');
+        $('fsRulerBtn').classList.remove('active');
         $('distSection').style.display = 'none';
         $('inspectTag').style.display = 'flex';
         $('inspectFields').style.display = '';
@@ -2093,6 +2157,7 @@
         if (inspectPanelOpen) toggleInspectPanel();
         rulerPanelOpen = true;
         $('rulerBtn').classList.add('active');
+        $('fsRulerBtn').classList.add('active');
         $('inspectTag').style.display = 'none';
         $('inspectFields').style.display = 'none';
         $('distSection').style.display = '';
@@ -2149,7 +2214,11 @@
     $('rulerBtn').onclick = toggleRulerPanel;
     $('distResetBtn').onclick = resetDist;
     $('inspectParentBtn').onclick = () => { if (inspectWebview) inspectWebview.executeJavaScript('if(window.__svSelectParent)window.__svSelectParent()').catch(() => {}); };
+    $('inspectChildBtn').onclick = () => { if (inspectWebview) inspectWebview.executeJavaScript('if(window.__svSelectChild)window.__svSelectChild()').catch(() => {}); };
     $('inspectResetBtn').onclick = () => { if (inspectWebview) inspectWebview.executeJavaScript('if(window.__svResetEl)window.__svResetEl()').catch(() => {}); };
+    $('distParentBtn').onclick = () => { if (distWebview) distWebview.executeJavaScript('if(window.__svDistTraverseB)window.__svDistTraverseB("up")').catch(() => {}); };
+    $('distChildBtn').onclick = () => { if (distWebview) distWebview.executeJavaScript('if(window.__svDistTraverseB)window.__svDistTraverseB("down")').catch(() => {}); };
+    $('fsRulerBtn').onclick = toggleRulerPanel;
 
     const inspectToggle = $('inspectToggle');
     const distToggle = $('distToggle');
