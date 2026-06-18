@@ -1,4 +1,4 @@
-const { app, BrowserWindow, session, ipcMain, shell, screen, nativeImage } = require('electron')
+const { app, BrowserWindow, session, ipcMain, shell, screen, nativeImage, webContents } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -111,6 +111,10 @@ async function downloadAndInstall(dmgUrl, manual) {
 // --- IPC (all registered once, outside createWindow) ---
 
 ipcMain.handle('get-version', () => app.getVersion())
+ipcMain.on('set-active-webview', (_, id) => {
+  const wc = webContents.fromId(id)
+  if (wc) activeWebviewContents = wc
+})
 ipcMain.on('set-fullscreen', (_, val) => mainWin?.setFullScreen(val))
 ipcMain.on('check-for-updates', () => checkForUpdates(true))
 ipcMain.on('install-update', () => { app.relaunch(); app.exit() })

@@ -13,4 +13,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateNotAvailable: (cb) => ipcRenderer.on('update-not-available', () => cb()),
   onUpdateError: (cb) => ipcRenderer.on('update-error', (_, msg) => cb(msg)),
   installUpdate: () => ipcRenderer.send('install-update'),
+  setActiveWebview: (id) => ipcRenderer.send('set-active-webview', id),
 })

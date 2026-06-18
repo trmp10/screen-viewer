@@ -720,6 +720,12 @@
       text-align: center;
       padding: 8px 0;
     }
+
+    #rulerBtn.active {
+      background: #2a2a2a;
+      border-color: #f39c12;
+      color: #f39c12;
+    }
   </style>
 </head>
 <body>
@@ -780,6 +786,12 @@
           <polyline points="8 6 2 12 8 18"/>
           <polyline points="16 6 22 12 16 18"/>
           <line x1="15" y1="6" x2="9" y2="18"/>
+        </svg>
+      </button>
+      <button class="header-icon-btn" id="rulerBtn" title="Measure distance">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="20" height="10" rx="1"/>
+          <path d="M7 7v4M12 7v6M17 7v4"/>
         </svg>
       </button>
     </div>
@@ -898,6 +910,10 @@
         <label>Border radius</label>
         <input id="iFieldBorderRadius" type="text" placeholder="0" />
       </div>
+      <div id="iSectionGap" class="inspect-field" style="display:none;">
+        <label>Gap</label>
+        <input id="iFieldGap" type="text" placeholder="0" />
+      </div>
       <div class="inspect-field" style="display:none;">
         <label>Display</label>
         <input id="iFieldDisplay" type="text" placeholder="block" />
@@ -949,6 +965,33 @@
           <div class="inspect-field">
             <label>Bottom</label>
             <input id="iFieldMarBottom" type="text" placeholder="0" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="distSection" style="display:none;">
+      <div class="inspect-tag" style="display:flex;align-items:center;justify-content:space-between;">
+        <span id="distStatusLabel">Click first element</span>
+        <button class="header-icon-btn" id="distResetBtn" style="width:24px;height:24px;display:none;" title="Reset">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.51"/>
+          </svg>
+        </button>
+      </div>
+      <div id="distResult" style="display:none;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;margin-top:8px;">
+          <span id="distTagA" style="background:#222;border:1px solid #333;border-radius:4px;padding:2px 6px;color:#f39c12;font-size:11px;font-family:monospace;"></span>
+          <span style="color:#444;font-size:10px;">to</span>
+          <span id="distTagB" style="background:#222;border:1px solid #333;border-radius:4px;padding:2px 6px;color:#f39c12;font-size:11px;font-family:monospace;"></span>
+        </div>
+        <div class="inspect-pad-grid">
+          <div class="inspect-field">
+            <label>Horizontal</label>
+            <input id="iFieldDistH" type="text" readonly placeholder="—" style="cursor:default;" />
+          </div>
+          <div class="inspect-field">
+            <label>Vertical</label>
+            <input id="iFieldDistV" type="text" readonly placeholder="—" style="cursor:default;" />
           </div>
         </div>
       </div>
@@ -1086,7 +1129,7 @@
       if (!urlDrag) return;
       const target = e.target.closest('[data-url-index]');
       if (!target) return;
-      const to = parseInt(target.dataset.urlIndex);
+      const to = parseInt(target.dataset.urlIndex, 10);
       if (to === urlDrag.from) return;
       [state.urls[urlDrag.from], state.urls[to]] = [state.urls[to], state.urls[urlDrag.from]];
       [viewEls[urlDrag.from], viewEls[to]] = [viewEls[to], viewEls[urlDrag.from]];
@@ -1176,6 +1219,8 @@
         el.wrap.style.pointerEvents = 'none';
       }));
 
+      while (viewEls.length < state.urls.length) viewEls.push([]);
+
       if (!state.urls.length || !activeUrl) {
         $('emptyState').textContent = 'Add a URL tab above and enter a URL';
         $('emptyState').style.display = '';
@@ -1193,8 +1238,6 @@
       }
 
       $('emptyState').style.display = 'none';
-
-      while (viewEls.length < state.urls.length) viewEls.push([]);
 
       state.urls.forEach((url, ui) => {
         if (!url) return;
@@ -1246,6 +1289,7 @@
           el.destroy = () => {
             webview.removeEventListener('did-navigate', didNavigate);
             webview.removeEventListener('did-navigate-in-page', didNavigateInPage);
+            webview.src = 'about:blank';
             wrap.remove();
           };
 
@@ -1281,6 +1325,35 @@
       });
 
       refs = (viewEls[state.activeUrl] || [])[state.active] || {};
+
+      if (inspecting && refs.webview) {
+        if (inspectWebview && inspectWebview !== refs.webview) {
+          inspectWebview.executeJavaScript(CLEANUP_INSPECTOR).catch(() => {});
+          inspectWebview.removeEventListener('console-message', onConsoleMessage);
+          inspectWebview = null;
+        }
+        if (!inspectWebview) {
+          refs.webview.executeJavaScript(INJECT_INSPECTOR).catch(() => {});
+          refs.webview.addEventListener('console-message', onConsoleMessage);
+          inspectWebview = refs.webview;
+        }
+      }
+      if (measuringDist && refs.webview) {
+        if (distWebview && distWebview !== refs.webview) {
+          distWebview.executeJavaScript(CLEANUP_DISTANCE).catch(() => {});
+          distWebview.removeEventListener('console-message', onDistMessage);
+          distWebview = null;
+        }
+        if (!distWebview) {
+          refs.webview.executeJavaScript(INJECT_DISTANCE).catch(() => {});
+          refs.webview.addEventListener('console-message', onDistMessage);
+          distWebview = refs.webview;
+        }
+      }
+      if (refs.webview && window.electronAPI) {
+        window.electronAPI.setActiveWebview(refs.webview.getWebContentsId());
+      }
+
       updateNavButtons();
     }
 
@@ -1308,7 +1381,7 @@
     urlInput.addEventListener('keydown', e => {
       if (e.key !== 'Enter') return;
       let val = urlInput.value.trim();
-      if (val && !/^https?:\/\//i.test(val)) val = 'http://' + val;
+      if (val && !/^https?:\/\//i.test(val)) val = 'https://' + val;
       urlInput.value = val;
       if (!state.urls.length) { state.urls.push(val); state.activeUrl = 0; }
       else { state.urls[state.activeUrl] = val; }
@@ -1483,6 +1556,8 @@
     // Inspect
     let inspecting = false;
     let panelCollapsed = false;
+    let inspectWebview = null;
+    let distWebview = null;
     const inspectPanel = $('inspectPanel');
     const inspectTagLabel = $('inspectTagLabel');
     const inspectCollapseIcon = $('inspectCollapseIcon');
@@ -1513,6 +1588,7 @@
     const iFieldPadRight = $('iFieldPadRight');
     const iFieldPadBottom = $('iFieldPadBottom');
     const iFieldPadLeft = $('iFieldPadLeft');
+    const iFieldGap = $('iFieldGap');
 
     const INJECT_INSPECTOR = `(function() {
       if (window.__svInspectCleanup) window.__svInspectCleanup();
@@ -1544,6 +1620,7 @@
           lineHeight: cs.lineHeight, letterSpacing: cs.letterSpacing,
           fontFamily: cs.fontFamily.split(',')[0].trim().replace(/['"]/g, ''),
           color: cs.color, backgroundColor: cs.backgroundColor, opacity: cs.opacity,
+          display: cs.display, gap: cs.gap,
           borderRadius: cs.borderRadius,
           width: Math.round(r.width) + 'px', height: Math.round(r.height) + 'px',
           paddingTop: cs.paddingTop, paddingRight: cs.paddingRight,
@@ -1564,9 +1641,65 @@
 
     const CLEANUP_INSPECTOR = `if (window.__svInspectCleanup) window.__svInspectCleanup()`;
 
+    const INJECT_DISTANCE = `(function() {
+      if (window.__svDistCleanup) window.__svDistCleanup();
+      const hlA = document.createElement('div');
+      hlA.style.cssText = 'position:fixed;pointer-events:none;border:2px solid #f39c12;background:rgba(243,156,18,0.12);z-index:2147483647;box-sizing:border-box;display:none;';
+      const hlB = document.createElement('div');
+      hlB.style.cssText = 'position:fixed;pointer-events:none;border:2px solid #f39c12;background:rgba(243,156,18,0.12);z-index:2147483647;box-sizing:border-box;display:none;';
+      const hlHover = document.createElement('div');
+      hlHover.style.cssText = 'position:fixed;pointer-events:none;border:2px dashed #f39c12;background:rgba(243,156,18,0.05);z-index:2147483646;box-sizing:border-box;display:none;';
+      document.body.appendChild(hlA);
+      document.body.appendChild(hlB);
+      document.body.appendChild(hlHover);
+      let phase = 0;
+      let rA = null;
+      let tagA = null;
+      function setRect(el, r) {
+        el.style.top = r.top+'px'; el.style.left = r.left+'px';
+        el.style.width = r.width+'px'; el.style.height = r.height+'px';
+        el.style.display = 'block';
+      }
+      function onOver(e) {
+        const t = e.target;
+        if (t.tagName === 'BODY' || t.tagName === 'HTML') return;
+        setRect(hlHover, t.getBoundingClientRect());
+      }
+      function onClick(e) {
+        e.preventDefault(); e.stopPropagation();
+        const t = e.target;
+        if (t.tagName === 'BODY' || t.tagName === 'HTML') return;
+        const r = t.getBoundingClientRect();
+        if (phase === 0) {
+          rA = r; tagA = t.tagName.toLowerCase();
+          setRect(hlA, r); hlB.style.display = 'none'; hlHover.style.display = 'none';
+          phase = 1;
+          console.log('__svd__' + JSON.stringify({ type: 'dist-a', tag: tagA }));
+        } else {
+          const tagB = t.tagName.toLowerCase();
+          setRect(hlB, r); hlHover.style.display = 'none';
+          const hGap = Math.round(Math.max(rA.left, r.left) - Math.min(rA.right, r.right));
+          const vGap = Math.round(Math.max(rA.top, r.top) - Math.min(rA.bottom, r.bottom));
+          phase = 0; rA = null;
+          console.log('__svd__' + JSON.stringify({ type: 'dist-b', tagA, tagB, hGap, vGap }));
+        }
+      }
+      document.addEventListener('mouseover', onOver, true);
+      document.addEventListener('click', onClick, true);
+      window.__svDistCleanup = () => {
+        document.removeEventListener('mouseover', onOver, true);
+        document.removeEventListener('click', onClick, true);
+        hlA.remove(); hlB.remove(); hlHover.remove();
+        delete window.__svDistCleanup;
+      };
+    })()`;
+
+    const CLEANUP_DISTANCE = `if (window.__svDistCleanup) window.__svDistCleanup()`;
+
     function onConsoleMessage(e) {
       if (!e.message.startsWith('__sv__')) return;
-      const data = JSON.parse(e.message.slice(6));
+      let data;
+      try { data = JSON.parse(e.message.slice(6)); } catch { return; }
       if (data.type !== 'inspect') return;
       const CONTAINER_TAGS = new Set(['div','section','article','main','nav','header','footer','aside','ul','ol','li','form','table','tbody','tr','td','th']);
       const isContainer = CONTAINER_TAGS.has(data.tag) || data.text.length > 50;
@@ -1578,6 +1711,9 @@
       $('iSectionLetterSpacing').style.display = isZero(data.letterSpacing) ? 'none' : '';
       $('iSectionBg').style.display = !rgbToHex(data.backgroundColor) ? 'none' : '';
       $('iSectionBorderRadius').style.display = isZero(data.borderRadius) ? 'none' : '';
+      const isFlexGrid = ['flex','grid','inline-flex','inline-grid'].includes(data.display || '');
+      $('iSectionGap').style.display = (isFlexGrid && !isZero(data.gap)) ? '' : 'none';
+      if (isFlexGrid && !isZero(data.gap)) iFieldGap.value = data.gap;
       $('iSectionPad').style.display = [data.paddingTop, data.paddingRight, data.paddingBottom, data.paddingLeft].every(isZero) ? 'none' : '';
       $('iSectionMar').style.display = [data.marginTop, data.marginRight, data.marginBottom, data.marginLeft].every(isZero) ? 'none' : '';
       iFieldFontSize.value = stripPx(data.fontSize);
@@ -1611,6 +1747,7 @@
         if (refs.webview) {
           refs.webview.executeJavaScript(INJECT_INSPECTOR);
           refs.webview.addEventListener('console-message', onConsoleMessage);
+          inspectWebview = refs.webview;
         }
       } else {
         inspectPanel.classList.remove('visible');
@@ -1619,9 +1756,71 @@
         inspectCollapseIcon.style.transform = '';
         inspectTagLabel.textContent = 'Click an element';
         inspectToggle.classList.remove('on');
+        if (inspectWebview) {
+          inspectWebview.executeJavaScript(CLEANUP_INSPECTOR);
+          inspectWebview.removeEventListener('console-message', onConsoleMessage);
+          inspectWebview = null;
+        }
+      }
+    }
+
+    let measuringDist = false;
+
+    function onDistMessage(e) {
+      if (!e.message.startsWith('__svd__')) return;
+      let data;
+      try { data = JSON.parse(e.message.slice(7)); } catch { return; }
+      if (data.type === 'dist-a') {
+        $('distStatusLabel').textContent = 'Click second element';
+        $('distTagA').textContent = '<' + data.tag + '>';
+        $('distResult').style.display = 'none';
+        $('distResetBtn').style.display = '';
+      } else if (data.type === 'dist-b') {
+        $('distStatusLabel').textContent = 'Click first element';
+        $('distTagB').textContent = '<' + data.tag + '>';
+        const fmt = v => v >= 0 ? v + 'px' : Math.abs(v) + 'px (overlap)';
+        $('iFieldDistH').value = fmt(data.hGap);
+        $('iFieldDistV').value = fmt(data.vGap);
+        $('distResult').style.display = '';
+        $('distResetBtn').style.display = '';
+      }
+    }
+
+    function resetDist() {
+      $('distStatusLabel').textContent = 'Click first element';
+      $('distResult').style.display = 'none';
+      $('distResetBtn').style.display = 'none';
+      if (refs.webview) refs.webview.executeJavaScript(INJECT_DISTANCE);
+    }
+
+    function toggleRuler() {
+      if (measuringDist) {
+        measuringDist = false;
+        $('rulerBtn').classList.remove('active');
+        $('distSection').style.display = 'none';
+        $('inspectTag').style.display = 'flex';
+        $('inspectFields').style.display = '';
+        if (!inspecting) inspectPanel.classList.remove('visible');
+        if (distWebview) {
+          distWebview.executeJavaScript(CLEANUP_DISTANCE);
+          distWebview.removeEventListener('console-message', onDistMessage);
+          distWebview = null;
+        }
+      } else {
+        if (inspecting) toggleInspect();
+        measuringDist = true;
+        $('distStatusLabel').textContent = 'Click first element';
+        $('distResult').style.display = 'none';
+        $('distResetBtn').style.display = 'none';
+        $('rulerBtn').classList.add('active');
+        $('inspectTag').style.display = 'none';
+        $('inspectFields').style.display = 'none';
+        $('distSection').style.display = '';
+        inspectPanel.classList.add('visible');
         if (refs.webview) {
-          refs.webview.executeJavaScript(CLEANUP_INSPECTOR);
-          refs.webview.removeEventListener('console-message', onConsoleMessage);
+          refs.webview.executeJavaScript(INJECT_DISTANCE);
+          refs.webview.addEventListener('console-message', onDistMessage);
+          distWebview = refs.webview;
         }
       }
     }
@@ -1639,7 +1838,7 @@
 
     function applyProp(prop, value) {
       if (!refs.webview || !value) return;
-      refs.webview.executeJavaScript(`if (window.__svLastEl) window.__svLastEl.style.setProperty('${prop}', '${value}', 'important')`);
+      refs.webview.executeJavaScript(`if (window.__svLastEl) window.__svLastEl.style.setProperty(${JSON.stringify(prop)}, ${JSON.stringify(value)}, 'important')`);
     }
 
     iFieldText.addEventListener('input', () => {
@@ -1665,8 +1864,11 @@
     iFieldMarRight.addEventListener('input', () => applyProp('margin-right', normDim(iFieldMarRight.value.trim())));
     iFieldMarBottom.addEventListener('input', () => applyProp('margin-bottom', normDim(iFieldMarBottom.value.trim())));
     iFieldMarLeft.addEventListener('input', () => applyProp('margin-left', normDim(iFieldMarLeft.value.trim())));
+    iFieldGap.addEventListener('input', () => applyProp('gap', normDim(iFieldGap.value.trim())));
 
     $('inspectBtn').onclick = toggleInspect;
+    $('rulerBtn').onclick = toggleRuler;
+    $('distResetBtn').onclick = resetDist;
 
     const inspectToggle = $('inspectToggle');
     inspectToggle.onclick = () => {
