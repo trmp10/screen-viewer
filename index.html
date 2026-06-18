@@ -847,9 +847,17 @@
     <div class="inspect-content">
     <div class="inspect-tag" id="inspectTag" style="display:flex;align-items:center;justify-content:space-between;">
       <span id="inspectTagLabel">Click an element</span>
-      <button class="inspect-toggle" id="inspectToggle" title="Toggle inspect mode">
-        <span class="inspect-toggle-knob"></span>
-      </button>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <button class="header-icon-btn" id="inspectParentBtn" style="width:22px;height:22px;display:none;" title="Select parent">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <button class="header-icon-btn" id="inspectResetBtn" style="width:22px;height:22px;display:none;" title="Reset changes">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.51"/></svg>
+        </button>
+        <button class="inspect-toggle" id="inspectToggle" title="Toggle inspect mode">
+          <span class="inspect-toggle-knob"></span>
+        </button>
+      </div>
     </div>
     <div id="inspectFields">
       <div class="inspect-field" style="margin-bottom:18px;">
@@ -989,7 +997,7 @@
           <span style="color:#444;font-size:10px;">to</span>
           <span id="distTagB" style="background:#222;border:1px solid #333;border-radius:4px;padding:2px 6px;color:#f39c12;font-size:11px;font-family:monospace;"></span>
         </div>
-        <div class="inspect-pad-grid">
+        <div id="distGapFields" class="inspect-pad-grid">
           <div class="inspect-field">
             <label>Horizontal</label>
             <input id="iFieldDistH" type="text" placeholder="—" />
@@ -997,6 +1005,14 @@
           <div class="inspect-field">
             <label>Vertical</label>
             <input id="iFieldDistV" type="text" placeholder="—" />
+          </div>
+        </div>
+        <div id="distContainFields" style="display:none;">
+          <div class="inspect-pad-grid">
+            <div class="inspect-field"><label>Left</label><input id="iFieldDistL" type="text" placeholder="—" /></div>
+            <div class="inspect-field"><label>Right</label><input id="iFieldDistR" type="text" placeholder="—" /></div>
+            <div class="inspect-field"><label>Top</label><input id="iFieldDistT" type="text" placeholder="—" /></div>
+            <div class="inspect-field"><label>Bottom</label><input id="iFieldDistB" type="text" placeholder="—" /></div>
           </div>
         </div>
       </div>
@@ -1613,16 +1629,12 @@
         hl.style.top = r.top+'px'; hl.style.left = r.left+'px';
         hl.style.width = r.width+'px'; hl.style.height = r.height+'px';
       }
-      function onClick(e) {
-        if (!enabled) return;
-        e.preventDefault(); e.stopPropagation();
-        const el = e.target;
-        if (el.tagName === 'BODY' || el.tagName === 'HTML') return;
-        locked = true;
-        window.__svLastEl = el;
+      function sendInspect(el) {
         const cs = window.getComputedStyle(el);
         const r = el.getBoundingClientRect();
-        const data = {
+        hl.style.top=r.top+'px'; hl.style.left=r.left+'px';
+        hl.style.width=r.width+'px'; hl.style.height=r.height+'px';
+        console.log('__sv__' + JSON.stringify({
           type: 'inspect',
           tag: el.tagName.toLowerCase(),
           text: el.innerText.slice(0, 120),
@@ -1637,8 +1649,17 @@
           paddingBottom: cs.paddingBottom, paddingLeft: cs.paddingLeft,
           marginTop: cs.marginTop, marginRight: cs.marginRight,
           marginBottom: cs.marginBottom, marginLeft: cs.marginLeft,
-        };
-        console.log('__sv__' + JSON.stringify(data));
+        }));
+      }
+      function onClick(e) {
+        if (!enabled) return;
+        e.preventDefault(); e.stopPropagation();
+        const el = e.target;
+        if (el.tagName === 'BODY' || el.tagName === 'HTML') return;
+        locked = true;
+        window.__svLastEl = el;
+        window.__svOrigStyle = el.style.cssText;
+        sendInspect(el);
       }
       function onScroll() {
         if (locked && window.__svLastEl) {
@@ -1650,9 +1671,21 @@
       function onContextMenu(e) {
         e.preventDefault(); e.stopPropagation();
         locked = false; window.__svLastEl = null;
-        hl.style.display = 'none';
+        hl.style.width='0'; hl.style.height='0';
         console.log('__sv__' + JSON.stringify({ type: 'inspect-reset' }));
       }
+      window.__svResetEl = () => {
+        if (window.__svLastEl && window.__svOrigStyle !== undefined)
+          window.__svLastEl.style.cssText = window.__svOrigStyle;
+      };
+      window.__svSelectParent = () => {
+        if (!window.__svLastEl) return;
+        const p = window.__svLastEl.parentElement;
+        if (!p || p.tagName === 'BODY' || p.tagName === 'HTML') return;
+        window.__svLastEl = p;
+        window.__svOrigStyle = p.style.cssText;
+        sendInspect(p);
+      };
       document.addEventListener('mouseover', onOver, true);
       document.addEventListener('click', onClick, true);
       document.addEventListener('scroll', onScroll, true);
@@ -1677,6 +1710,9 @@
         hl.remove();
         delete window.__svInspectCleanup;
         delete window.__svInspectSetEnabled;
+        delete window.__svResetEl;
+        delete window.__svSelectParent;
+        delete window.__svOrigStyle;
       };
     })()`;
 
@@ -1695,7 +1731,7 @@
       document.body.appendChild(hlA);
       document.body.appendChild(hlB);
       document.body.appendChild(hlHover);
-      let phase = 0, rA = null, tagA = null, measureSvg = null, distEnabled = true, elA = null, elB = null;
+      let phase = 0, rA = null, tagA = null, measureSvg = null, distEnabled = true, elA = null, elB = null, distMode = 'gap';
       function setRect(el, r) {
         el.style.top=r.top+'px'; el.style.left=r.left+'px';
         el.style.width=r.width+'px'; el.style.height=r.height+'px';
@@ -1703,30 +1739,48 @@
       }
       function mkEl(tag) { return document.createElementNS(NS, tag); }
       function attr(el, obj) { Object.keys(obj).forEach(k => el.setAttribute(k, obj[k])); }
+      function isContained(ra, rb) {
+        return (ra.left>=rb.left&&ra.right<=rb.right&&ra.top>=rb.top&&ra.bottom<=rb.bottom)||
+               (rb.left>=ra.left&&rb.right<=ra.right&&rb.top>=ra.top&&rb.bottom<=ra.bottom);
+      }
+      function makeSvg() {
+        if (measureSvg) { measureSvg.remove(); measureSvg=null; }
+        measureSvg=mkEl('svg');
+        measureSvg.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:2147483645;overflow:visible;';
+      }
+      function addLine(x1,y1,x2,y2,label,horiz) {
+        const g=mkEl('g'), tk=5;
+        (horiz?[x1,x2]:[]).forEach(x=>{const t=mkEl('line');attr(t,{x1:x,y1:y1-tk,x2:x,y2:y1+tk,stroke:col,'stroke-width':'1.5'});g.appendChild(t);});
+        (!horiz?[y1,y2]:[]).forEach(y=>{const t=mkEl('line');attr(t,{x1:x1-tk,y1:y,x2:x1+tk,y2:y,stroke:col,'stroke-width':'1.5'});g.appendChild(t);});
+        const ln=mkEl('line');attr(ln,{x1,y1,x2,y2,stroke:col,'stroke-width':'1.5'});g.appendChild(ln);
+        const mx=(x1+x2)/2,my=(y1+y2)/2,pw=label.length*7+12,ph=18;
+        const bg=mkEl('rect');attr(bg,{x:mx-pw/2,y:my-ph/2,width:pw,height:ph,rx:4,fill:'#0d0d0d',stroke:col,'stroke-width':'1'});g.appendChild(bg);
+        const tx=mkEl('text');attr(tx,{x:mx,y:my+4,'text-anchor':'middle',fill:col,'font-size':'11','font-family':'-apple-system,system-ui,sans-serif','font-weight':'600'});tx.textContent=label;g.appendChild(tx);
+        measureSvg.appendChild(g);
+      }
       function drawMeasurements(ra, rb, hGap, vGap) {
-        if (measureSvg) { measureSvg.remove(); measureSvg = null; }
-        if (hGap <= 0 && vGap <= 0) return;
-        measureSvg = mkEl('svg');
-        measureSvg.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:2147483645;overflow:visible;';
-        function addLine(x1, y1, x2, y2, label, horiz) {
-          const g = mkEl('g'); const tk = 5;
-          (horiz ? [x1,x2] : []).forEach(x => { const t=mkEl('line'); attr(t,{x1:x,y1:y1-tk,x2:x,y2:y1+tk,stroke:col,'stroke-width':'1.5'}); g.appendChild(t); });
-          (!horiz ? [y1,y2] : []).forEach(y => { const t=mkEl('line'); attr(t,{x1:x1-tk,y1:y,x2:x1+tk,y2:y,stroke:col,'stroke-width':'1.5'}); g.appendChild(t); });
-          const ln=mkEl('line'); attr(ln,{x1,y1,x2,y2,stroke:col,'stroke-width':'1.5'}); g.appendChild(ln);
-          const mx=(x1+x2)/2, my=(y1+y2)/2, pw=label.length*7+12, ph=18;
-          const bg=mkEl('rect'); attr(bg,{x:mx-pw/2,y:my-ph/2,width:pw,height:ph,rx:4,fill:'#0d0d0d',stroke:col,'stroke-width':'1'}); g.appendChild(bg);
-          const tx=mkEl('text'); attr(tx,{x:mx,y:my+4,'text-anchor':'middle',fill:col,'font-size':'11','font-family':'-apple-system,system-ui,sans-serif','font-weight':'600'}); tx.textContent=label; g.appendChild(tx);
-          measureSvg.appendChild(g);
-        }
+        makeSvg();
         if (hGap > 0) {
-          const x1=Math.min(ra.right,rb.right), x2=Math.max(ra.left,rb.left);
-          addLine(x1,(ra.top+ra.bottom+rb.top+rb.bottom)/4,x2,(ra.top+ra.bottom+rb.top+rb.bottom)/4,String(hGap),true);
+          const x1=Math.min(ra.right,rb.right),x2=Math.max(ra.left,rb.left),cy=(ra.top+ra.bottom+rb.top+rb.bottom)/4;
+          addLine(x1,cy,x2,cy,String(hGap),true);
         }
         if (vGap > 0) {
-          const y1=Math.min(ra.bottom,rb.bottom), y2=Math.max(ra.top,rb.top);
-          addLine((ra.left+ra.right+rb.left+rb.right)/4,y1,(ra.left+ra.right+rb.left+rb.right)/4,y2,String(vGap),false);
+          const y1=Math.min(ra.bottom,rb.bottom),y2=Math.max(ra.top,rb.top),cx=(ra.left+ra.right+rb.left+rb.right)/4;
+          addLine(cx,y1,cx,y2,String(vGap),false);
         }
+        if (hGap>0||vGap>0) document.body.appendChild(measureSvg); else { measureSvg.remove(); measureSvg=null; }
+      }
+      function drawContainment(outer, inner) {
+        makeSvg();
+        const l=Math.round(inner.left-outer.left), r=Math.round(outer.right-inner.right);
+        const t=Math.round(inner.top-outer.top), b=Math.round(outer.bottom-inner.bottom);
+        const icx=(inner.left+inner.right)/2, icy=(inner.top+inner.bottom)/2;
+        if(l>0) addLine(outer.left,icy,inner.left,icy,String(l),true);
+        if(r>0) addLine(inner.right,icy,outer.right,icy,String(r),true);
+        if(t>0) addLine(icx,outer.top,icx,inner.top,String(t),false);
+        if(b>0) addLine(icx,inner.bottom,icx,outer.bottom,String(b),false);
         document.body.appendChild(measureSvg);
+        return {l,r,t,b};
       }
       function onOver(e) {
         if (!distEnabled) return;
@@ -1749,17 +1803,30 @@
         } else {
           const tagB=t.tagName.toLowerCase(); elB=t;
           setRect(hlB,r); hlHover.style.display='none';
-          const hGap=Math.round(Math.max(rA.left,r.left)-Math.min(rA.right,r.right));
-          const vGap=Math.round(Math.max(rA.top,r.top)-Math.min(rA.bottom,r.bottom));
-          drawMeasurements(rA,r,hGap,vGap);
-          phase=0; rA=null;
-          console.log('__svd__'+JSON.stringify({type:'dist-b',tagA,tagB,hGap,vGap}));
+          phase=0;
+          if (isContained(rA,r)) {
+            distMode='contain';
+            const aInB=rA.left>=r.left&&rA.right<=r.right&&rA.top>=r.top&&rA.bottom<=r.bottom;
+            const outer=aInB?r:rA, inner=aInB?rA:r;
+            const outerEl=aInB?t:elA;
+            window.__svDistTarget=outerEl;
+            const dims=drawContainment(outer,inner);
+            console.log('__svd__'+JSON.stringify({type:'dist-contain',tagOuter:aInB?tagB:tagA,tagInner:aInB?tagA:tagB,...dims}));
+          } else {
+            distMode='gap';
+            window.__svDistTarget=t;
+            const hGap=Math.round(Math.max(rA.left,r.left)-Math.min(rA.right,r.right));
+            const vGap=Math.round(Math.max(rA.top,r.top)-Math.min(rA.bottom,r.bottom));
+            drawMeasurements(rA,r,hGap,vGap);
+            console.log('__svd__'+JSON.stringify({type:'dist-b',tagA,tagB,hGap,vGap}));
+          }
+          rA=null;
         }
       }
       function onContextMenu(e) {
         if (!distEnabled) return;
         e.preventDefault(); e.stopPropagation();
-        phase=0; rA=null; elA=null; elB=null;
+        phase=0; rA=null; elA=null; elB=null; distMode='gap';
         hlA.style.display='none'; hlB.style.display='none'; hlHover.style.display='none';
         if (measureSvg) { measureSvg.remove(); measureSvg=null; }
         console.log('__svd__'+JSON.stringify({type:'dist-reset'}));
@@ -1770,9 +1837,14 @@
         if (elB && hlB.style.display==='block') {
           setRect(hlB, elB.getBoundingClientRect());
           const ra=elA.getBoundingClientRect(), rb=elB.getBoundingClientRect();
-          const hG=Math.round(Math.max(ra.left,rb.left)-Math.min(ra.right,rb.right));
-          const vG=Math.round(Math.max(ra.top,rb.top)-Math.min(ra.bottom,rb.bottom));
-          drawMeasurements(ra,rb,hG,vG);
+          if (distMode==='contain') {
+            const aInB=ra.left>=rb.left&&ra.right<=rb.right&&ra.top>=rb.top&&ra.bottom<=rb.bottom;
+            drawContainment(aInB?rb:ra, aInB?ra:rb);
+          } else {
+            const hG=Math.round(Math.max(ra.left,rb.left)-Math.min(ra.right,rb.right));
+            const vG=Math.round(Math.max(ra.top,rb.top)-Math.min(ra.bottom,rb.bottom));
+            drawMeasurements(ra,rb,hG,vG);
+          }
         }
       }
       document.addEventListener('mouseover', onOver, true);
@@ -1805,8 +1877,15 @@
       if (!e.message.startsWith('__sv__')) return;
       let data;
       try { data = JSON.parse(e.message.slice(6)); } catch { return; }
-      if (data.type === 'inspect-reset') { inspectTagLabel.textContent = 'Click an element'; return; }
+      if (data.type === 'inspect-reset') {
+        inspectTagLabel.textContent = 'Click an element';
+        $('inspectParentBtn').style.display = 'none';
+        $('inspectResetBtn').style.display = 'none';
+        return;
+      }
       if (data.type !== 'inspect') return;
+      $('inspectParentBtn').style.display = '';
+      $('inspectResetBtn').style.display = '';
       const CONTAINER_TAGS = new Set(['div','section','article','main','nav','header','footer','aside','ul','ol','li','form','table','tbody','tr','td','th']);
       const isContainer = CONTAINER_TAGS.has(data.tag) || data.text.length > 50;
       iFieldText.closest('.inspect-field').style.display = isContainer ? 'none' : '';
@@ -1904,10 +1983,18 @@
 
     let measuringDist = false;
 
+    function applyDistProp(prop, rawVal) {
+      if (!distWebview || !rawVal) return;
+      const n = parseInt(rawVal, 10);
+      if (isNaN(n)) return;
+      distWebview.executeJavaScript('if(window.__svDistTarget)window.__svDistTarget.style.setProperty(' + JSON.stringify(prop) + ',' + JSON.stringify(n + 'px') + ",'important')").catch(() => {});
+    }
+
     function onDistMessage(e) {
       if (!e.message.startsWith('__svd__')) return;
       let data;
       try { data = JSON.parse(e.message.slice(7)); } catch { return; }
+      const fmt = v => v > 0 ? String(v) : '—';
       if (data.type === 'dist-a') {
         $('distStatusLabel').textContent = 'Click second element';
         $('distTagA').textContent = '<' + data.tag + '>';
@@ -1915,10 +2002,24 @@
         $('distResetBtn').style.display = '';
       } else if (data.type === 'dist-b') {
         $('distStatusLabel').textContent = 'Click first element';
+        $('distTagA').textContent = '<' + data.tagA + '>';
         $('distTagB').textContent = '<' + data.tagB + '>';
-        const fmt = v => v > 0 ? String(v) : '—';
         $('iFieldDistH').value = fmt(data.hGap);
         $('iFieldDistV').value = fmt(data.vGap);
+        $('distGapFields').style.display = '';
+        $('distContainFields').style.display = 'none';
+        $('distResult').style.display = '';
+        $('distResetBtn').style.display = '';
+      } else if (data.type === 'dist-contain') {
+        $('distStatusLabel').textContent = 'Click first element';
+        $('distTagA').textContent = '<' + data.tagOuter + '>';
+        $('distTagB').textContent = '<' + data.tagInner + '>';
+        $('iFieldDistL').value = fmt(data.l);
+        $('iFieldDistR').value = fmt(data.r);
+        $('iFieldDistT').value = fmt(data.t);
+        $('iFieldDistB').value = fmt(data.b);
+        $('distGapFields').style.display = 'none';
+        $('distContainFields').style.display = '';
         $('distResult').style.display = '';
         $('distResetBtn').style.display = '';
       } else if (data.type === 'dist-reset') {
@@ -1927,6 +2028,13 @@
         $('distResetBtn').style.display = 'none';
       }
     }
+
+    $('iFieldDistH').addEventListener('input', () => applyDistProp('margin-left', $('iFieldDistH').value.trim()));
+    $('iFieldDistV').addEventListener('input', () => applyDistProp('margin-top', $('iFieldDistV').value.trim()));
+    $('iFieldDistL').addEventListener('input', () => applyDistProp('padding-left', $('iFieldDistL').value.trim()));
+    $('iFieldDistR').addEventListener('input', () => applyDistProp('padding-right', $('iFieldDistR').value.trim()));
+    $('iFieldDistT').addEventListener('input', () => applyDistProp('padding-top', $('iFieldDistT').value.trim()));
+    $('iFieldDistB').addEventListener('input', () => applyDistProp('padding-bottom', $('iFieldDistB').value.trim()));
 
     function turnOnDist() {
       measuringDist = true;
@@ -2040,6 +2148,8 @@
     $('inspectBtn').onclick = toggleInspectPanel;
     $('rulerBtn').onclick = toggleRulerPanel;
     $('distResetBtn').onclick = resetDist;
+    $('inspectParentBtn').onclick = () => { if (inspectWebview) inspectWebview.executeJavaScript('if(window.__svSelectParent)window.__svSelectParent()').catch(() => {}); };
+    $('inspectResetBtn').onclick = () => { if (inspectWebview) inspectWebview.executeJavaScript('if(window.__svResetEl)window.__svResetEl()').catch(() => {}); };
 
     const inspectToggle = $('inspectToggle');
     const distToggle = $('distToggle');
