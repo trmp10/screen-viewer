@@ -992,11 +992,11 @@
         <div class="inspect-pad-grid">
           <div class="inspect-field">
             <label>Horizontal</label>
-            <input id="iFieldDistH" type="text" readonly placeholder="—" style="cursor:default;" />
+            <input id="iFieldDistH" type="text" placeholder="—" />
           </div>
           <div class="inspect-field">
             <label>Vertical</label>
-            <input id="iFieldDistV" type="text" readonly placeholder="—" style="cursor:default;" />
+            <input id="iFieldDistV" type="text" placeholder="—" />
           </div>
         </div>
       </div>
@@ -1341,6 +1341,7 @@
           refs.webview.executeJavaScript(INJECT_INSPECTOR).catch(() => {});
           refs.webview.addEventListener('console-message', onConsoleMessage);
           inspectWebview = refs.webview;
+          if (!inspectToggle.classList.contains('on')) refs.webview.executeJavaScript('if(window.__svInspectSetEnabled)window.__svInspectSetEnabled(false)').catch(() => {});
         }
       }
       if (measuringDist && refs.webview) {
@@ -1353,6 +1354,7 @@
           refs.webview.executeJavaScript(INJECT_DISTANCE).catch(() => {});
           refs.webview.addEventListener('console-message', onDistMessage);
           distWebview = refs.webview;
+          if (!distToggle.classList.contains('on')) refs.webview.executeJavaScript('if(window.__svDistSetEnabled)window.__svDistSetEnabled(false)').catch(() => {});
         }
       }
       if (refs.webview && window.electronAPI) {
@@ -1602,9 +1604,9 @@
       const hl = document.createElement('div');
       hl.style.cssText = 'position:fixed;pointer-events:none;border:2px solid #4a9eff;background:rgba(74,158,255,0.07);z-index:2147483647;box-sizing:border-box;';
       document.body.appendChild(hl);
-      let locked = false;
+      let locked = false, enabled = true;
       function onOver(e) {
-        if (locked) return;
+        if (!enabled || locked) return;
         const tag = e.target.tagName;
         if (tag === 'BODY' || tag === 'HTML') return;
         const r = e.target.getBoundingClientRect();
@@ -1612,6 +1614,7 @@
         hl.style.width = r.width+'px'; hl.style.height = r.height+'px';
       }
       function onClick(e) {
+        if (!enabled) return;
         e.preventDefault(); e.stopPropagation();
         const el = e.target;
         if (el.tagName === 'BODY' || el.tagName === 'HTML') return;
@@ -1639,10 +1642,24 @@
       }
       document.addEventListener('mouseover', onOver, true);
       document.addEventListener('click', onClick, true);
+      window.__svInspectSetEnabled = (on) => {
+        enabled = on;
+        if (!on) { hl.style.display = 'none'; }
+        else {
+          hl.style.display = '';
+          if (locked && window.__svLastEl) {
+            const r = window.__svLastEl.getBoundingClientRect();
+            hl.style.top=r.top+'px'; hl.style.left=r.left+'px';
+            hl.style.width=r.width+'px'; hl.style.height=r.height+'px';
+          }
+        }
+      };
       window.__svInspectCleanup = () => {
         document.removeEventListener('mouseover', onOver, true);
         document.removeEventListener('click', onClick, true);
-        hl.remove(); delete window.__svInspectCleanup;
+        hl.remove();
+        delete window.__svInspectCleanup;
+        delete window.__svInspectSetEnabled;
       };
     })()`;
 
@@ -1661,7 +1678,7 @@
       document.body.appendChild(hlA);
       document.body.appendChild(hlB);
       document.body.appendChild(hlHover);
-      let phase = 0, rA = null, tagA = null, measureSvg = null;
+      let phase = 0, rA = null, tagA = null, measureSvg = null, distEnabled = true;
       function setRect(el, r) {
         el.style.top=r.top+'px'; el.style.left=r.left+'px';
         el.style.width=r.width+'px'; el.style.height=r.height+'px';
@@ -1695,11 +1712,13 @@
         document.body.appendChild(measureSvg);
       }
       function onOver(e) {
+        if (!distEnabled) return;
         const t = e.target;
         if (t.tagName==='BODY'||t.tagName==='HTML') return;
         setRect(hlHover, t.getBoundingClientRect());
       }
       function onClick(e) {
+        if (!distEnabled) return;
         e.preventDefault(); e.stopPropagation();
         const t = e.target;
         if (t.tagName==='BODY'||t.tagName==='HTML') return;
@@ -1721,6 +1740,7 @@
         }
       }
       function onContextMenu(e) {
+        if (!distEnabled) return;
         e.preventDefault(); e.stopPropagation();
         phase=0; rA=null;
         hlA.style.display='none'; hlB.style.display='none'; hlHover.style.display='none';
@@ -1730,6 +1750,14 @@
       document.addEventListener('mouseover', onOver, true);
       document.addEventListener('click', onClick, true);
       document.addEventListener('contextmenu', onContextMenu, true);
+      window.__svDistSetEnabled = (on) => {
+        distEnabled = on;
+        const vis = on ? '' : 'hidden';
+        if (hlA.style.display === 'block') hlA.style.visibility = vis;
+        if (hlB.style.display === 'block') hlB.style.visibility = vis;
+        if (measureSvg) measureSvg.style.visibility = vis;
+        if (!on) hlHover.style.display = 'none';
+      };
       window.__svDistCleanup = () => {
         document.removeEventListener('mouseover', onOver, true);
         document.removeEventListener('click', onClick, true);
@@ -1737,6 +1765,7 @@
         hlA.remove(); hlB.remove(); hlHover.remove();
         if (measureSvg) { measureSvg.remove(); measureSvg=null; }
         delete window.__svDistCleanup;
+        delete window.__svDistSetEnabled;
       };
     })()`;
 
@@ -1807,7 +1836,21 @@
     }
 
     function toggleInspectOverlay() {
-      if (inspecting) turnOffInspect(); else turnOnInspect();
+      if (!inspecting) { turnOnInspect(); return; }
+      if (inspectToggle.classList.contains('on')) {
+        inspectToggle.classList.remove('on');
+        $('fsInspectBtn').classList.remove('active');
+        if (inspectWebview) inspectWebview.executeJavaScript('if(window.__svInspectSetEnabled)window.__svInspectSetEnabled(false)').catch(() => {});
+      } else {
+        inspectToggle.classList.add('on');
+        $('fsInspectBtn').classList.add('active');
+        if (inspectWebview && inspectWebview === refs.webview) {
+          inspectWebview.executeJavaScript('if(window.__svInspectSetEnabled)window.__svInspectSetEnabled(true)').catch(() => {});
+        } else {
+          if (inspectWebview) { inspectWebview.executeJavaScript(CLEANUP_INSPECTOR).catch(() => {}); inspectWebview.removeEventListener('console-message', onConsoleMessage); }
+          if (refs.webview) { refs.webview.executeJavaScript(INJECT_INSPECTOR).catch(() => {}); refs.webview.addEventListener('console-message', onConsoleMessage); inspectWebview = refs.webview; }
+        }
+      }
     }
 
     function toggleInspectPanel() {
@@ -1842,7 +1885,7 @@
       } else if (data.type === 'dist-b') {
         $('distStatusLabel').textContent = 'Click first element';
         $('distTagB').textContent = '<' + data.tagB + '>';
-        const fmt = v => v >= 0 ? String(v) : Math.abs(v) + ' (overlap)';
+        const fmt = v => String(v);
         $('iFieldDistH').value = fmt(data.hGap);
         $('iFieldDistV').value = fmt(data.vGap);
         $('distResult').style.display = '';
@@ -1875,7 +1918,19 @@
     }
 
     function toggleDistOverlay() {
-      if (measuringDist) turnOffDist(); else turnOnDist();
+      if (!measuringDist) { turnOnDist(); return; }
+      if (distToggle.classList.contains('on')) {
+        distToggle.classList.remove('on');
+        if (distWebview) distWebview.executeJavaScript('if(window.__svDistSetEnabled)window.__svDistSetEnabled(false)').catch(() => {});
+      } else {
+        distToggle.classList.add('on');
+        if (distWebview && distWebview === refs.webview) {
+          distWebview.executeJavaScript('if(window.__svDistSetEnabled)window.__svDistSetEnabled(true)').catch(() => {});
+        } else {
+          if (distWebview) { distWebview.executeJavaScript(CLEANUP_DISTANCE).catch(() => {}); distWebview.removeEventListener('console-message', onDistMessage); }
+          if (refs.webview) { refs.webview.executeJavaScript(INJECT_DISTANCE).catch(() => {}); refs.webview.addEventListener('console-message', onDistMessage); distWebview = refs.webview; }
+        }
+      }
     }
 
     function resetDist() {
