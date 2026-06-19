@@ -721,6 +721,10 @@
       padding: 8px 0;
     }
 
+    .inspect-panel {
+      max-height: calc(100vh - 130px);
+    }
+
     #rulerBtn.active {
       background: #2a2a2a;
       border-color: #f39c12;
@@ -851,7 +855,7 @@
       </svg>
     </button>
     <div class="inspect-content">
-    <div class="inspect-tag" id="inspectTag" style="display:flex;align-items:center;justify-content:space-between;">
+    <div class="inspect-tag" id="inspectTag" style="display:none;align-items:center;justify-content:space-between;">
       <span id="inspectTagLabel">Click an element</span>
       <div style="display:flex;align-items:center;gap:4px;">
         <button class="header-icon-btn" id="inspectParentBtn" style="width:22px;height:22px;display:none;" title="Select parent">
@@ -868,7 +872,7 @@
         </button>
       </div>
     </div>
-    <div id="inspectFields">
+    <div id="inspectFields" style="display:none;">
       <div class="inspect-field" style="margin-bottom:18px;">
         <label>Text</label>
         <input id="iFieldText" type="text" placeholder="—" />
@@ -986,6 +990,7 @@
         </div>
       </div>
     </div>
+    <div id="panelDivider" style="height:1px;background:#2e2e2e;margin:8px -14px;display:none;"></div>
     <div id="distSection" style="display:none;">
       <div class="inspect-tag" style="display:flex;align-items:center;justify-content:space-between;">
         <span id="distStatusLabel">Click first element</span>
@@ -2103,14 +2108,21 @@
         if (inspecting) turnOffInspect();
         inspectPanelOpen = false;
         $('inspectBtn').classList.remove('active');
-        inspectPanel.classList.remove('visible');
-        inspectPanel.classList.remove('panel-collapsed');
-        panelCollapsed = false;
-        inspectCollapseIcon.style.transform = '';
+        $('inspectTag').style.display = 'none';
+        $('inspectFields').style.display = 'none';
+        $('panelDivider').style.display = 'none';
+        if (!rulerPanelOpen) {
+          inspectPanel.classList.remove('visible');
+          inspectPanel.classList.remove('panel-collapsed');
+          panelCollapsed = false;
+          inspectCollapseIcon.style.transform = '';
+        }
       } else {
-        if (rulerPanelOpen) toggleRulerPanel();
         inspectPanelOpen = true;
         $('inspectBtn').classList.add('active');
+        $('inspectTag').style.display = 'flex';
+        $('inspectFields').style.display = '';
+        if (rulerPanelOpen) $('panelDivider').style.display = '';
         inspectPanel.classList.add('visible');
         if (!inspecting) turnOnInspect();
       }
@@ -2232,20 +2244,19 @@
         $('rulerBtn').classList.remove('active');
         $('fsRulerBtn').classList.remove('active');
         $('distSection').style.display = 'none';
-        $('inspectTag').style.display = 'flex';
-        $('inspectFields').style.display = '';
+        $('panelDivider').style.display = 'none';
         if (!inspectPanelOpen) inspectPanel.classList.remove('visible');
       } else {
-        if (inspectPanelOpen) toggleInspectPanel();
         rulerPanelOpen = true;
         $('rulerBtn').classList.add('active');
         $('fsRulerBtn').classList.add('active');
-        $('inspectTag').style.display = 'none';
-        $('inspectFields').style.display = 'none';
         $('distSection').style.display = '';
         $('distStatusLabel').textContent = 'Click first element';
         $('distResult').style.display = 'none';
         $('distResetBtn').style.display = 'none';
+        $('distParentBtn').style.display = 'none';
+        $('distChildBtn').style.display = 'none';
+        if (inspectPanelOpen) $('panelDivider').style.display = '';
         inspectPanel.classList.add('visible');
         if (!measuringDist) turnOnDist();
       }
