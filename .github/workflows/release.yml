@@ -29,15 +29,15 @@ jobs:
       - name: Get SHA256
         id: sha
         run: |
-          sha=$(shasum -a 256 "dist/Screen Viewer-${{ steps.version.outputs.version }}-arm64.dmg" | awk '{print $1}')
+          sha=$(shasum -a 256 "dist/Screen-Viewer-${{ steps.version.outputs.version }}-arm64.dmg" | awk '{print $1}')
           echo "sha256=$sha" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/Screen Viewer-${{ steps.version.outputs.version }}-arm64.dmg
-            dist/Screen Viewer-${{ steps.version.outputs.version }}-arm64-mac.zip
+            dist/Screen-Viewer-${{ steps.version.outputs.version }}-arm64.dmg
+            dist/Screen-Viewer-${{ steps.version.outputs.version }}-arm64-mac.zip
             dist/latest-mac.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -48,4 +48,4 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.TAP_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/trmp10/homebrew-tap/dispatches \
-            -d "{\"event_type\":\"new-release\",\"client_payload\":{\"version\":\"${{ steps.version.outputs.version }}\",\"sha256\":\"${{ steps.sha.outputs.sha256 }}\"}}"
+            -d "{\"event_type\":\"new-release\",\"client_payload\":{\"cask\":\"screen-viewer\",\"version\":\"${{ steps.version.outputs.version }}\",\"sha256\":\"${{ steps.sha.outputs.sha256 }}\"}}"
