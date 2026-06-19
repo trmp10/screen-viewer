@@ -389,8 +389,7 @@
 
     body.app-fullscreen .header,
     body.app-fullscreen .tabs-bar,
-    body.app-fullscreen .url-tabs-bar,
-    body.app-fullscreen .zoom-card { display: none; }
+    body.app-fullscreen .url-tabs-bar { display: none; }
 
     .fs-actions {
       display: none;
@@ -807,7 +806,7 @@
       </svg>
     </button>
     <button class="header-icon-btn" id="fullscreenBtn" title="Fullscreen">
-      <svg id="fsIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
         <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
       </svg>
@@ -925,17 +924,9 @@
         <label>Letter spacing</label>
         <input id="iFieldLetterSpacing" type="text" placeholder="normal" />
       </div>
-      <div class="inspect-field" style="display:none;">
-        <label>Family</label>
-        <input id="iFieldFontFamily" type="text" placeholder="Inter" />
-      </div>
       <div id="iSectionBg" class="inspect-field">
         <label>Background</label>
         <input id="iFieldBg" type="text" placeholder="#ffffff" />
-      </div>
-      <div class="inspect-field" style="display:none;">
-        <label>Opacity</label>
-        <input id="iFieldOpacity" type="text" placeholder="1" />
       </div>
       <div class="inspect-field" style="margin-bottom:6px;margin-top:26px;">
         <label>Size</label>
@@ -957,14 +948,6 @@
       <div id="iSectionGap" class="inspect-field" style="display:none;">
         <label>Gap</label>
         <input id="iFieldGap" type="text" placeholder="0" />
-      </div>
-      <div class="inspect-field" style="display:none;">
-        <label>Display</label>
-        <input id="iFieldDisplay" type="text" placeholder="block" />
-      </div>
-      <div class="inspect-field" style="display:none;">
-        <label>Box shadow</label>
-        <input id="iFieldBoxShadow" type="text" placeholder="none" />
       </div>
       <div id="iSectionMar">
         <div class="inspect-field" style="margin-bottom:6px;margin-top:26px;">
@@ -1630,10 +1613,8 @@
     const iFieldFontWeight = $('iFieldFontWeight');
     const iFieldLineHeight = $('iFieldLineHeight');
     const iFieldLetterSpacing = $('iFieldLetterSpacing');
-    const iFieldFontFamily = $('iFieldFontFamily');
     const iFieldColor = $('iFieldColor');
     const iFieldBg = $('iFieldBg');
-    const iFieldOpacity = $('iFieldOpacity');
     const iFieldBorderRadius = $('iFieldBorderRadius');
     const iFieldMarTop = $('iFieldMarTop');
     const iFieldMarRight = $('iFieldMarRight');
@@ -2045,10 +2026,8 @@
       iFieldFontWeight.value = data.fontWeight;
       iFieldLineHeight.value = stripPx(data.lineHeight);
       iFieldLetterSpacing.value = stripPx(data.letterSpacing);
-      iFieldFontFamily.value = data.fontFamily;
       iFieldColor.value = rgbToHex(data.color);
       iFieldBg.value = rgbToHex(data.backgroundColor);
-      iFieldOpacity.value = data.opacity;
       iFieldBorderRadius.value = stripPx(data.borderRadius);
       iFieldWidth.value = stripPx(data.width);
       iFieldHeight.value = stripPx(data.height);
@@ -2225,18 +2204,6 @@
       }
     }
 
-    function resetDist() {
-      if (measuringDist) turnOffDist();
-      $('distStatusLabel').textContent = 'Click first element';
-      $('distResult').style.display = 'none';
-      $('distResetBtn').style.display = 'none';
-      $('distParentBtn').style.display = 'none';
-      $('distChildBtn').style.display = 'none';
-      $('distGapFields').style.display = '';
-      $('distContainFields').style.display = 'none';
-      turnOnDist();
-    }
-
     function toggleRulerPanel() {
       if (rulerPanelOpen) {
         if (measuringDist) turnOffDist();
@@ -2286,10 +2253,8 @@
     iFieldFontWeight.addEventListener('input', () => applyProp('font-weight', iFieldFontWeight.value.trim()));
     iFieldLineHeight.addEventListener('input', () => applyProp('line-height', normDim(iFieldLineHeight.value.trim())));
     iFieldLetterSpacing.addEventListener('input', () => applyProp('letter-spacing', normDim(iFieldLetterSpacing.value.trim())));
-    iFieldFontFamily.addEventListener('input', () => applyProp('font-family', iFieldFontFamily.value.trim()));
     iFieldColor.addEventListener('input', () => applyProp('color', normColor(iFieldColor.value.trim())));
     iFieldBg.addEventListener('input', () => applyProp('background-color', normColor(iFieldBg.value.trim())));
-    iFieldOpacity.addEventListener('input', () => applyProp('opacity', iFieldOpacity.value.trim()));
     iFieldBorderRadius.addEventListener('input', () => applyProp('border-radius', normDim(iFieldBorderRadius.value.trim())));
     iFieldWidth.addEventListener('input', () => applyProp('width', normDim(iFieldWidth.value.trim())));
     iFieldHeight.addEventListener('input', () => applyProp('height', normDim(iFieldHeight.value.trim())));
