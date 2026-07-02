@@ -2016,7 +2016,7 @@
       const isZero = v => !v || v === '0' || v === 'normal' || v === '0px';
       $('iSectionLetterSpacing').style.display = isZero(data.letterSpacing) ? 'none' : '';
       $('iSectionBg').style.display = !rgbToHex(data.backgroundColor) ? 'none' : '';
-      $('iSectionBorderRadius').style.display = isZero(data.borderRadius) ? 'none' : '';
+      $('iSectionBorderRadius').style.display = '';
       const isFlexGrid = ['flex','grid','inline-flex','inline-grid'].includes(data.display || '');
       $('iSectionGap').style.display = (isFlexGrid && !isZero(data.gap)) ? '' : 'none';
       if (isFlexGrid && !isZero(data.gap)) iFieldGap.value = stripPx(data.gap);
