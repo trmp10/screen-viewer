@@ -1228,7 +1228,7 @@
         sep.textContent = '·';
         sep.style.cssText = 'color:#333;font-size:10px;';
         tab.append(name, sep, dims, close);
-        tab.onclick = () => { state.active = i; save(); render(); };
+        tab.onclick = () => switchScreen(i);
         tabsBar.insertBefore(tab, addTabBtn);
       });
     }
@@ -1295,6 +1295,7 @@
           const onNavigate = (url) => {
             const currentUi = el.urlIndex;
             const currentSi = el.screenIndex;
+            if (currentSi !== state.active) return;
             state.urls[currentUi] = url;
             if (currentUi === state.activeUrl) {
               urlInput.value = url;
@@ -1398,6 +1399,15 @@
     function switchScreen(i) {
       if (i < 0 || i >= state.views.length) return;
       state.active = i;
+      const activeEl = (viewEls[state.activeUrl] || [])[i];
+      if (activeEl) {
+        const url = activeEl.webview.getURL();
+        if (url && url !== 'about:blank' && url !== state.urls[state.activeUrl]) {
+          state.urls[state.activeUrl] = url;
+          urlInput.value = url;
+          renderUrlTabs();
+        }
+      }
       save();
       renderView();
       renderTabs();
