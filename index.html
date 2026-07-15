@@ -1205,11 +1205,13 @@
       urlInput.focus();
     };
 
+    let viewDrag = null;
+
     function renderTabs() {
       tabsBar.querySelectorAll('.tab').forEach(t => t.remove());
       state.views.forEach((v, i) => {
         const tab = document.createElement('div');
-        tab.className = 'tab' + (i === state.active ? ' active' : '');
+        tab.className = 'tab' + (i === state.active ? ' active' : '') + (viewDrag && viewDrag.from === i ? ' dragging' : '');
 
         const name = document.createElement('span');
         name.className = 'tab-name';
@@ -1228,10 +1230,45 @@
         sep.textContent = '·';
         sep.style.cssText = 'color:#333;font-size:10px;';
         tab.append(name, sep, dims, close);
-        tab.onclick = () => switchScreen(i);
+        tab.onclick = () => { if (!viewDrag) switchScreen(i); };
+        tab.addEventListener('mousedown', e => {
+          if (e.button !== 0 || e.target === close) return;
+          viewDrag = { from: i, moved: false };
+          e.preventDefault();
+        });
+        tab.dataset.viewIndex = i;
         tabsBar.insertBefore(tab, addTabBtn);
       });
     }
+
+    document.addEventListener('mousemove', e => {
+      if (!viewDrag) return;
+      const target = e.target.closest('[data-view-index]');
+      if (!target) return;
+      const to = parseInt(target.dataset.viewIndex, 10);
+      if (to === viewDrag.from) return;
+      [state.views[viewDrag.from], state.views[to]] = [state.views[to], state.views[viewDrag.from]];
+      viewEls.forEach(urlViews => {
+        if (!urlViews) return;
+        [urlViews[viewDrag.from], urlViews[to]] = [urlViews[to], urlViews[viewDrag.from]];
+      });
+      if (state.active === viewDrag.from) state.active = to;
+      else if (state.active === to) state.active = viewDrag.from;
+      viewDrag.from = to;
+      viewDrag.moved = true;
+      syncUrlIndices();
+      renderTabs();
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!viewDrag) return;
+      const moved = viewDrag.moved;
+      viewDrag = null;
+      if (moved) {
+        save();
+        renderTabs();
+      }
+    });
 
     function renderView() {
       const activeUrl = state.urls[state.activeUrl];
