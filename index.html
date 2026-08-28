@@ -816,6 +816,9 @@
 
   <div class="tabs-bar" id="tabsBar">
     <button class="tab-add" id="addTabBtn" title="Add screen">+</button>
+    <button class="tab-add" id="resetTabsBtn" title="Reset to default screens">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.51"/></svg>
+    </button>
   </div>
 
   <div class="tabs-bar url-tabs-bar" id="urlTabsBar">
@@ -1306,7 +1309,7 @@
         state.views.forEach((v, si) => {
           if (viewEls[ui][si]) return;
 
-          const zoom = fitZoom(v);
+          const zoom = 1;
           const wrap = document.createElement('div');
           wrap.className = 'view-wrap';
 
@@ -1485,14 +1488,6 @@
       $('forwardBtn').disabled = !refs.webview || !refs.webview.canGoForward();
     }
 
-    const PADDING = 56;
-
-    function fitZoom(v) {
-      const aw = main.clientWidth - PADDING;
-      const ah = main.clientHeight - PADDING;
-      return Math.min(aw / v.width, ah / v.height, 1);
-    }
-
     function applyZoom(zoom) {
       const v = state.views[state.active];
       if (!v || !refs.webview) return;
@@ -1500,10 +1495,6 @@
       refs.scaleWrap.style.width = Math.round(v.width * zoom) + 'px';
       refs.scaleWrap.style.height = Math.round(v.height * zoom) + 'px';
     }
-
-    window.addEventListener('resize', () => {
-      if (!isFullscreen && refs.webview) applyZoom(fitZoom(state.views[state.active]));
-    });
 
     $('fullscreenBtn').onclick = () => enterFullscreen();
 
@@ -1572,6 +1563,15 @@
 
     renderBookmarks();
 
+    $('resetTabsBtn').onclick = () => {
+      viewEls.forEach(urlViews => (urlViews || []).forEach(el => { if (el) el.destroy(); }));
+      viewEls = [];
+      state.views = DEFAULTS.map(v => ({ ...v }));
+      state.active = 0;
+      save();
+      render();
+    };
+
     // Add screen modal
     addTabBtn.onclick = () => {
       mName.value = ''; mWidth.value = ''; mHeight.value = '';
@@ -1622,7 +1622,7 @@
       isFullscreen = false;
       document.body.classList.remove('app-fullscreen');
       if (window.electronAPI) window.electronAPI.setFullScreen(false);
-      if (refs.webview && v) applyZoom(fitZoom(v));
+      if (refs.webview && v) applyZoom(1);
     }
 
     function handleKey(key) {
