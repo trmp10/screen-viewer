@@ -1309,7 +1309,7 @@
         state.views.forEach((v, si) => {
           if (viewEls[ui][si]) return;
 
-          const zoom = 1;
+          const zoom = fitZoom(v);
           const wrap = document.createElement('div');
           wrap.className = 'view-wrap';
 
@@ -1433,6 +1433,10 @@
         window.electronAPI.setActiveWebview(refs.webview.getWebContentsId());
       }
 
+      if (refs.webview && !isFullscreen) {
+        applyZoom(fitZoom(state.views[state.active]));
+      }
+
       updateNavButtons();
     }
 
@@ -1488,6 +1492,14 @@
       $('forwardBtn').disabled = !refs.webview || !refs.webview.canGoForward();
     }
 
+    const PADDING = 56;
+
+    function fitZoom(v) {
+      const aw = main.clientWidth - PADDING;
+      const ah = main.clientHeight - PADDING;
+      return Math.min(aw / v.width, ah / v.height, 1);
+    }
+
     function applyZoom(zoom) {
       const v = state.views[state.active];
       if (!v || !refs.webview) return;
@@ -1495,6 +1507,10 @@
       refs.scaleWrap.style.width = Math.round(v.width * zoom) + 'px';
       refs.scaleWrap.style.height = Math.round(v.height * zoom) + 'px';
     }
+
+    window.addEventListener('resize', () => {
+      if (!isFullscreen && refs.webview) applyZoom(fitZoom(state.views[state.active]));
+    });
 
     $('fullscreenBtn').onclick = () => enterFullscreen();
 
@@ -1622,7 +1638,7 @@
       isFullscreen = false;
       document.body.classList.remove('app-fullscreen');
       if (window.electronAPI) window.electronAPI.setFullScreen(false);
-      if (refs.webview && v) applyZoom(1);
+      if (refs.webview && v) applyZoom(fitZoom(v));
     }
 
     function handleKey(key) {
